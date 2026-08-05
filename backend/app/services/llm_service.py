@@ -1,0 +1,190 @@
+"""Service LLM — pont entre la couche IA (routeur) et la persistance.
+
+Responsabilités :
+  - construire un `AIRouter` à partir des credentials d'un utilisateur ;
+  - brancher un Observer qui journalise chaque appel dans `ModelUsage` ;
+  - exposer les use-cases du LLM Manager : lister modèles, tester, compléter,
+    gérer les providers, consulter la consommation.
+"""
+from __future__ import annotations
+
+from ..ai import (
+    AIRouter,
+    CompletionRequest,
+    Message,
+    ModelRegistry,
+    ProviderConfig,
+    ProviderFactory,
+    ProviderError,
+)
+from ..ai.base import Modality, Privacy
+from ..ai.strategies import RoutingContext
+from ..models import ModelUsage, ProviderCredential
+from ..repositories import ProviderRepository, UsageRepository
+
+
+class LLMServiceError(Exception):
+    status_code = 400
+
+
+class LLMService:
+    def __init__(self, providers: ProviderRepository | None = None,
+                 usage: UsageRepository | None = None):
+        self.providers = providers or ProviderRepository()
+        self.usage = usage or UsageRepository()
+
+    # --- Construction du routeur pour un utilisateur ---
+    def _configs(self, user_id: str) -> list[ProviderConfig]:
+        """Providers de l'utilisateur + Ollama TOUJOURS présent comme socle local.
+
+        Aucun fournisseur cloud n'est requis : si l'utilisateur n'a rien
+        configuré (ou si ses clés cloud sont indisponibles), on bascule
+        automatiquement sur Ollama et ses modèles installés localement.
+        """
+        from flask import current_app
+        creds = self.providers.enabled_for_user(user_id)
+        configs = [ProviderConfig(key=c.provider_key, api_key=c.api_key,
+                                  base_url=c.base_url) for c in creds]
+        # Injecte le socle Ollama sauf si l'utilisateur a déjà défini son propre Ollama.
+        if not any(c.key == "ollama" for c in configs):
+            configs.append(ProviderConfig(
+                key="ollama",
+                base_url=current_app.config.get("OLLAMA_URL", "http://localhost:11434"),
+            ))
+        return configs
+
+    def router_for(self, user_id: str, *, record_usage: bool = True,
+                   agent: str | None = None) -> AIRouter:
+        configs = self._configs(user_id)  # jamais vide : Ollama est toujours là
+        registry = ModelRegistry(configs)
+        router = AIRouter(registry)
+
+        # Observer : persiste la télémétrie à chaque appel (Observer Pattern).
+        # Désactivable pour les agents, qui enregistrent eux-mêmes (tag agent).
+        if record_usage:
+            def _record(resp, spec):
+                self.usage.add(ModelUsage(
+                    user_id=user_id, provider=resp.provider, model=resp.model,
+                    prompt_tokens=resp.usage.prompt_tokens,
+                    completion_tokens=resp.usage.completion_tokens,
+                    cost_usd=resp.cost_usd, latency_ms=resp.latency_ms, agent=agent,
+                ))
+            router.subscribe(_record)
+        return router
+
+    # --- LLM Manager : catalogue ---
+    def catalog(self, user_id: str) -> list[dict]:
+        """Tous les modèles disponibles pour l'utilisateur + métadonnées de routing."""
+        try:
+            registry = ModelRegistry(self._configs(user_id))
+        except LLMServiceError:
+            return []
+        return [self._spec_dict(s) for s in registry.specs()]
+
+    @staticmethod
+    def _spec_dict(s) -> dict:
+        return {
+            "id": s.id, "provider": s.provider, "display_name": s.display_name,
+            "context_window": s.context_window, "max_output": s.max_output,
+            "input_cost": s.input_cost, "output_cost": s.output_cost,
+            "speed": s.speed, "quality": s.quality, "privacy": s.privacy.value,
+            "supports_tools": s.supports_tools,
+            "modalities": [m.value for m in s.modalities],
+        }
+
+    def available_providers(self) -> list[str]:
+        return ProviderFactory.available()
+
+    # --- LLM Manager : gestion des providers ---
+    def add_provider(self, user_id: str, provider_key: str, api_key: str = "",
+                     base_url: str | None = None, label: str = "default",
+                     is_default: bool = False) -> dict:
+        if provider_key not in ProviderFactory.available():
+            raise LLMServiceError(f"Fournisseur inconnu: {provider_key}")
+        from ..security import encrypt
+        if is_default:
+            for c in self.providers.for_user(user_id):
+                c.is_default = False
+        cred = ProviderCredential(
+            user_id=user_id, provider_key=provider_key, label=label,
+            api_key_encrypted=encrypt(api_key) if api_key else "",
+            base_url=base_url, is_default=is_default,
+        )
+        self.providers.add(cred)
+        return cred.to_dict()
+
+    def list_providers(self, user_id: str) -> list[dict]:
+        return [c.to_dict() for c in self.providers.for_user(user_id)]
+
+    def delete_provider(self, user_id: str, cred_id: str) -> None:
+        cred = self.providers.get(cred_id)
+        if not cred or cred.user_id != user_id:
+            raise LLMServiceError("Fournisseur introuvable")
+        self.providers.delete(cred)
+
+    # --- LLM Manager : test d'un modèle ---
+    def test_model(self, user_id: str, model_id: str) -> dict:
+        router = self.router_for(user_id)
+        if router.registry.spec(model_id) is None:
+            raise LLMServiceError(f"Modèle indisponible: {model_id}")
+        req = CompletionRequest(
+            messages=[Message(role="user", content="Réponds juste: OK")],
+            model=model_id, max_tokens=8, temperature=0,
+        )
+        resp = router.registry.provider_for(model_id).complete(req)
+        return {
+            "ok": True, "model": resp.model, "provider": resp.provider,
+            "latency_ms": round(resp.latency_ms, 1),
+            "tokens": resp.usage.total_tokens,
+            "cost_usd": round(resp.cost_usd, 6),
+            "sample": resp.content[:120],
+        }
+
+    # --- Chat : complétion routée ---
+    def complete(self, user_id: str, messages: list[dict], *,
+                 strategy: str = "balanced", pinned_model: str | None = None,
+                 require_privacy: str | None = None, needs_tools: bool = False,
+                 temperature: float = 0.7, max_tokens: int | None = None) -> dict:
+        router = self.router_for(user_id)
+        if not router.registry.specs():
+            raise LLMServiceError(
+                "Aucun modèle disponible. Configurez un fournisseur cloud "
+                "(OpenAI, Claude…) ou démarrez Ollama avec un modèle installé "
+                "(ex: `ollama pull llama3.2`).")
+        ctx = RoutingContext(
+            needs_tools=needs_tools,
+            pinned_model=pinned_model,
+            require_privacy=Privacy(require_privacy) if require_privacy else None,
+        )
+        req = CompletionRequest(
+            messages=[Message(role=m["role"], content=m["content"]) for m in messages],
+            temperature=temperature, max_tokens=max_tokens,
+        )
+        chosen = router.choose(ctx, strategy)
+        resp = router.complete(req, ctx=ctx, strategy=strategy)
+        return {
+            "content": resp.content,
+            "routing": {"strategy": strategy, "chosen_model": chosen.id,
+                        "provider": resp.provider},
+            "usage": {"prompt_tokens": resp.usage.prompt_tokens,
+                      "completion_tokens": resp.usage.completion_tokens,
+                      "cost_usd": round(resp.cost_usd, 6),
+                      "latency_ms": round(resp.latency_ms, 1)},
+        }
+
+    # --- Dashboards de consommation ---
+    def consumption(self, user_id: str) -> dict:
+        return {
+            "summary": self.usage.summary_for_user(user_id),
+            "by_model": self.usage.by_model_for_user(user_id),
+        }
+
+    def preview_routing(self, user_id: str, strategy: str = "balanced",
+                        require_privacy: str | None = None) -> list[dict]:
+        """Explique le routage : classement des modèles pour une stratégie donnée."""
+        router = self.router_for(user_id)
+        ctx = RoutingContext(
+            require_privacy=Privacy(require_privacy) if require_privacy else None)
+        return [{"rank": i + 1, "model": s.id, "provider": s.provider,
+                 "quality": s.quality, "input_cost": s.input_cost, "speed": s.speed}
+                for i, s in enumerate(router.rank(ctx, strategy))]
