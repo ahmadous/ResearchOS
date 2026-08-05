@@ -50,6 +50,11 @@ class BaseConfig:
     # --- Ollama (socle local, toujours disponible en fallback) ---
     OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 
+    # --- RAG / Embeddings ---
+    # "hashing" (déterministe, hors-ligne, défaut) ou "ollama" (nomic-embed-text).
+    EMBEDDING_BACKEND = os.getenv("EMBEDDING_BACKEND", "hashing")
+    EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "nomic-embed-text")
+
 
 class DevConfig(BaseConfig):
     DEBUG = True

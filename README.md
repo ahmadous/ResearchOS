@@ -32,7 +32,7 @@ backend/app/
 - [x] **Phase 1** — Fondation : couche IA (providers + registry + factory + router)
 - [x] **Phase 2** — App factory, config, DB, auth JWT, LLM Manager + Chat (REST + Swagger)
 - [x] **Phase 3** — 14 agents spécialisés + orchestrateur (run / pipeline / auto)
-- [ ] Phase 4 — RAG complet (chunking, embeddings, hybrid search, citations)
+- [x] **Phase 4** — RAG complet (chunking, embeddings, recherche hybride BM25+dense, citations)
 - [ ] Phase 5 — Recherche scientifique (arXiv, OpenAlex, Semantic Scholar, ...)
 - [ ] Phase 6 — WebSocket temps réel + Celery
 - [ ] Phase 7 — Frontend React (Dashboard, Workspace, LLM Manager, Workflow Builder)

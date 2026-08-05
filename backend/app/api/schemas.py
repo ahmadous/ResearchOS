@@ -50,6 +50,23 @@ class MessageSchema(Schema):
     content = fields.Str(required=True)
 
 
+class DocumentIngestSchema(Schema):
+    title = fields.Str(load_default="Sans titre")
+    text = fields.Str(required=True, validate=validate.Length(min=1))
+    source_type = fields.Str(load_default="text")
+    source_ref = fields.Str(load_default=None, allow_none=True)
+
+
+class RAGQuerySchema(Schema):
+    question = fields.Str(required=True, validate=validate.Length(min=1))
+    document_id = fields.Str(load_default=None, allow_none=True)
+    strategy = fields.Str(load_default="balanced",
+                          validate=validate.OneOf(
+                              ["balanced", "cost", "speed", "quality", "privacy"]))
+    require_privacy = fields.Str(load_default=None, allow_none=True,
+                                 validate=validate.OneOf(["local", "cloud", "private_cloud"]))
+
+
 class AgentRunSchema(Schema):
     task = fields.Str(required=True, validate=validate.Length(min=1))
     goal = fields.Str(load_default=None, allow_none=True)
