@@ -1,0 +1,13 @@
+# =====================================================================
+#  Fournisseurs IA cloud — OPTIONNELS
+#  N'installer que ceux dont on a besoin. Sans eux, ResearchOS tourne
+#  entièrement en local via Ollama. Chaque provider importe son SDK de
+#  façon paresseuse et renvoie une erreur claire s'il n'est pas installé.
+#
+#  Installation :  pip install -r requirements-cloud.txt
+#  (ou à la carte : pip install "openai>=1.50")
+# =====================================================================
+
+openai>=1.50            # OpenAI + compatibles (OpenRouter, DeepSeek, Qwen, Grok...)
+anthropic>=0.40         # Claude
+google-generativeai>=0.8   # Gemini
