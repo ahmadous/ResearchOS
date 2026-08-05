@@ -6,6 +6,7 @@ from .agents import blp as agents_blp
 from .auth import blp as auth_blp
 from .chat import blp as chat_blp
 from .llm import blp as llm_blp
+from .rag import blp as rag_blp
 
 
 def register_blueprints() -> None:
@@ -13,3 +14,4 @@ def register_blueprints() -> None:
     api.register_blueprint(llm_blp)
     api.register_blueprint(chat_blp)
     api.register_blueprint(agents_blp)
+    api.register_blueprint(rag_blp)

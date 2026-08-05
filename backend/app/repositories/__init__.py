@@ -3,7 +3,7 @@ from __future__ import annotations
 from sqlalchemy import func
 
 from ..extensions import db
-from ..models import ModelUsage, ProviderCredential, User
+from ..models import Chunk, Document, ModelUsage, ProviderCredential, User
 from .base import BaseRepository
 
 
@@ -61,4 +61,28 @@ class UsageRepository(BaseRepository[ModelUsage]):
                  "cost_usd": round(r[3], 6)} for r in rows]
 
 
-__all__ = ["UserRepository", "ProviderRepository", "UsageRepository"]
+class DocumentRepository(BaseRepository[Document]):
+    model = Document
+
+    def for_user(self, user_id: str) -> list[Document]:
+        return self.list(user_id=user_id)
+
+
+class ChunkRepository(BaseRepository[Chunk]):
+    model = Chunk
+
+    def records_for_user(self, user_id: str) -> list[dict]:
+        """Tous les chunks de l'utilisateur au format attendu par le retriever."""
+        rows = db.session.execute(
+            db.select(Chunk, Document.title)
+            .join(Document, Chunk.document_id == Document.id)
+            .where(Document.user_id == user_id)
+        ).all()
+        return [chunk.to_record(title=title) for chunk, title in rows]
+
+    def records_for_document(self, document_id: str, title: str | None = None) -> list[dict]:
+        return [c.to_record(title=title) for c in self.list(document_id=document_id)]
+
+
+__all__ = ["UserRepository", "ProviderRepository", "UsageRepository",
+           "DocumentRepository", "ChunkRepository"]
