@@ -4,13 +4,56 @@ import {
   DialogTitle, Grid, IconButton, MenuItem, Stack, Table, TableBody, TableCell,
   TableHead, TableRow, TextField, Tooltip, Typography, LinearProgress,
 } from '@mui/material'
-import { Add, Delete, PlayArrow, CheckCircle, Cloud, Computer } from '@mui/icons-material'
+import { Add, Delete, PlayArrow, CheckCircle, Cloud, Computer, Refresh, Circle } from '@mui/icons-material'
 import Page from '../components/Page'
 import { errMsg } from '../api/client'
 import {
   useModels, useProviders, useAvailableProviders, useAddProvider,
-  useDeleteProvider, useTestModel,
+  useDeleteProvider, useTestModel, useOllama,
 } from '../hooks/useApi'
+
+// Carte dédiée : état du démon Ollama local + modèles installés sur la machine.
+function OllamaCard() {
+  const { data, isFetching, refetch } = useOllama()
+  const up = data?.up
+  return (
+    <Card sx={{ mb: 3, borderColor: up ? 'success.main' : 'divider' }}>
+      <CardContent>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
+          <Stack direction="row" gap={1} alignItems="center">
+            <Computer color={up ? 'success' : 'disabled'} />
+            <Typography variant="h6">Ollama (local)</Typography>
+            <Chip size="small" icon={<Circle sx={{ fontSize: '10px !important' }} />}
+              color={up ? 'success' : 'default'}
+              label={up ? `en ligne · ${data.count} modèle(s)` : 'hors ligne'} />
+          </Stack>
+          <IconButton size="small" onClick={() => refetch()} disabled={isFetching}>
+            <Refresh fontSize="small" />
+          </IconButton>
+        </Stack>
+        <Typography variant="caption" color="text.secondary">{data?.base_url}</Typography>
+
+        {up ? (
+          <Stack direction="row" gap={1} flexWrap="wrap" mt={1.5}>
+            {data.models.map((m) => (
+              <Chip key={m.id} label={`${m.id}`} variant="outlined"
+                icon={<Computer sx={{ fontSize: '16px !important' }} />} />
+            ))}
+            {data.count === 0 && (
+              <Typography variant="body2" color="text.secondary">
+                Aucun modèle installé — lancez <code>ollama pull llama3.2</code>.
+              </Typography>
+            )}
+          </Stack>
+        ) : (
+          <Alert severity="warning" sx={{ mt: 1.5 }}>
+            {data?.hint || 'Démon Ollama injoignable. Lancez `ollama serve`.'}
+          </Alert>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
 
 export default function LLMManager() {
   const { data: models } = useModels()
@@ -52,6 +95,9 @@ export default function LLMManager() {
       subtitle="Fournisseurs, modèles disponibles, coûts et latence"
       action={<Button variant="contained" startIcon={<Add />} onClick={() => setOpen(true)}>Ajouter un fournisseur</Button>}
     >
+      {/* Ollama local : modèles installés sur la machine */}
+      <OllamaCard />
+
       {/* Fournisseurs configurés */}
       <Grid container spacing={2} mb={3}>
         {(providers || []).length === 0 && (
@@ -153,6 +199,12 @@ export default function LLMManager() {
                 <MenuItem key={p} value={p}>{p}</MenuItem>
               ))}
             </TextField>
+            {form.provider_key === 'ollama' && (
+              <Alert severity="info">
+                Ollama local est <b>déjà actif automatiquement</b> — inutile de l'ajouter.
+                Ajoutez-le seulement pour un Ollama <b>distant</b> (renseignez la Base URL).
+              </Alert>
+            )}
             <TextField label="Clé API" type="password" value={form.api_key}
               onChange={(e) => setForm({ ...form, api_key: e.target.value })}
               helperText="Laisser vide pour Ollama (local)" />

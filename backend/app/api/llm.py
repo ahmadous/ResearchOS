@@ -23,6 +23,14 @@ class AvailableProviders(MethodView):
         return {"providers": LLMService().available_providers()}
 
 
+@blp.route("/ollama")
+class OllamaStatus(MethodView):
+    @jwt_required()
+    def get(self):
+        """État du démon Ollama local + modèles installés sur la machine."""
+        return LLMService().ollama_status(_uid())
+
+
 @blp.route("/providers")
 class Providers(MethodView):
     @jwt_required()

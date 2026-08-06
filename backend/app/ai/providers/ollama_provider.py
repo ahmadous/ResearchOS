@@ -91,20 +91,23 @@ class OllamaProvider(LLMProvider):
             model_id = m.get("name") or m.get("model")
             if not model_id:
                 continue
-            params_b = _parse_params_billions(model_id, m.get("details", {}))
+            details = m.get("details", {}) or {}
+            params_b = _parse_params_billions(model_id, details)
             quality, speed = _heuristics(params_b)
-            # Contexte : Ollama ne l'expose pas dans /api/tags. On prend un défaut
-            # prudent mais réaliste pour les modèles récents.
+            # /api/tags expose parfois le contexte réel et les capacités : on les
+            # utilise si présents, sinon défaut prudent.
+            ctx = details.get("context_length") or self.opts.get("context_window", 8192)
+            caps = m.get("capabilities") or []
             specs.append(ModelSpec(
                 id=model_id,
                 provider=self.name,
                 display_name=f"{model_id} (local)",
-                context_window=int(self.opts.get("context_window", 8192)),
+                context_window=int(ctx),
                 max_output=2048,
                 input_cost=0.0, output_cost=0.0,
                 speed=speed, quality=quality,
                 privacy=Privacy.LOCAL,
-                supports_tools=False,
+                supports_tools="tools" in caps,
             ))
         self._specs_cache = specs
         self._cache_at = now
