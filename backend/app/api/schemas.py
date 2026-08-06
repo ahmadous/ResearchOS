@@ -50,6 +50,24 @@ class MessageSchema(Schema):
     content = fields.Str(required=True)
 
 
+class ScholarSearchSchema(Schema):
+    query = fields.Str(required=True, validate=validate.Length(min=2))
+    sources = fields.List(fields.Str(), load_default=None, allow_none=True)
+    limit = fields.Int(load_default=10, validate=validate.Range(min=1, max=50))
+
+
+class ScholarImportSchema(Schema):
+    # On accepte un objet `Paper` (tel que renvoyé par /search).
+    title = fields.Str(load_default="")
+    abstract = fields.Str(load_default="")
+    authors = fields.List(fields.Str(), load_default=list)
+    year = fields.Int(load_default=None, allow_none=True)
+    doi = fields.Str(load_default=None, allow_none=True)
+    url = fields.Str(load_default=None, allow_none=True)
+    source = fields.Str(load_default="external")
+    external_id = fields.Str(load_default=None, allow_none=True)
+
+
 class DocumentIngestSchema(Schema):
     title = fields.Str(load_default="Sans titre")
     text = fields.Str(required=True, validate=validate.Length(min=1))

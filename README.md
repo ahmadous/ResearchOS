@@ -33,7 +33,7 @@ backend/app/
 - [x] **Phase 2** — App factory, config, DB, auth JWT, LLM Manager + Chat (REST + Swagger)
 - [x] **Phase 3** — 14 agents spécialisés + orchestrateur (run / pipeline / auto)
 - [x] **Phase 4** — RAG complet (chunking, embeddings, recherche hybride BM25+dense, citations)
-- [ ] Phase 5 — Recherche scientifique (arXiv, OpenAlex, Semantic Scholar, ...)
+- [x] **Phase 5** — Recherche scientifique (arXiv, OpenAlex, Semantic Scholar, CrossRef, HAL) + import RAG
 - [ ] Phase 6 — WebSocket temps réel + Celery
 - [ ] Phase 7 — Frontend React (Dashboard, Workspace, LLM Manager, Workflow Builder)
 
