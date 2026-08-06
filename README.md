@@ -34,8 +34,8 @@ backend/app/
 - [x] **Phase 3** — 14 agents spécialisés + orchestrateur (run / pipeline / auto)
 - [x] **Phase 4** — RAG complet (chunking, embeddings, recherche hybride BM25+dense, citations)
 - [x] **Phase 5** — Recherche scientifique (arXiv, OpenAlex, Semantic Scholar, CrossRef, HAL) + import RAG
-- [x] **Phase 7** — Frontend React (Vite + MUI) : Login, Dashboard, LLM Manager, Chat, Agents, Documents (RAG), Recherche sci.
-- [ ] Phase 6 — WebSocket temps réel + Celery (progression des tâches)
+- [x] **Phase 6** — WebSocket temps réel (SocketIO) + tâches asynchrones (runner local, Celery optionnel)
+- [x] **Phase 7** — Frontend React (Vite + MUI) : Login, Dashboard, LLM Manager, Chat, Agents, Documents (RAG), Recherche sci., temps réel
 
 ## Démarrage (dev)
 

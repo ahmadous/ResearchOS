@@ -50,6 +50,12 @@ class MessageSchema(Schema):
     content = fields.Str(required=True)
 
 
+class TaskCreateSchema(Schema):
+    kind = fields.Str(required=True,
+                      validate=validate.OneOf(["agent", "rag_ingest", "scholar_import"]))
+    params = fields.Dict(required=True)
+
+
 class ScholarSearchSchema(Schema):
     query = fields.Str(required=True, validate=validate.Length(min=2))
     sources = fields.List(fields.Str(), load_default=None, allow_none=True)

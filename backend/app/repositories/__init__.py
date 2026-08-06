@@ -3,7 +3,7 @@ from __future__ import annotations
 from sqlalchemy import func
 
 from ..extensions import db
-from ..models import Chunk, Document, ModelUsage, ProviderCredential, User
+from ..models import Chunk, Document, ModelUsage, ProviderCredential, Task, User
 from .base import BaseRepository
 
 
@@ -84,5 +84,13 @@ class ChunkRepository(BaseRepository[Chunk]):
         return [c.to_record(title=title) for c in self.list(document_id=document_id)]
 
 
+class TaskRepository(BaseRepository[Task]):
+    model = Task
+
+    def for_user(self, user_id: str) -> list[Task]:
+        rows = self.list(user_id=user_id)
+        return sorted(rows, key=lambda t: t.created_at, reverse=True)
+
+
 __all__ = ["UserRepository", "ProviderRepository", "UsageRepository",
-           "DocumentRepository", "ChunkRepository"]
+           "DocumentRepository", "ChunkRepository", "TaskRepository"]

@@ -46,6 +46,8 @@ class BaseConfig:
 
     # --- Redis / Celery (Phase 6) ---
     REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    # Exécution des tâches : "inline" (thread local, défaut), "celery" (prod), "sync" (tests).
+    TASK_RUNNER = os.getenv("TASK_RUNNER", "inline")
 
     # --- Ollama (socle local, toujours disponible en fallback) ---
     OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
@@ -64,6 +66,7 @@ class TestConfig(BaseConfig):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=5)
+    TASK_RUNNER = "sync"   # jobs exécutés en synchrone -> tests déterministes
 
 
 class ProdConfig(BaseConfig):
