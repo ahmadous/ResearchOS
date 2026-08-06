@@ -3,7 +3,9 @@ from __future__ import annotations
 from sqlalchemy import func
 
 from ..extensions import db
-from ..models import Chunk, Document, ModelUsage, ProviderCredential, Task, User
+from ..models import (
+    Chunk, Document, ModelUsage, ProviderCredential, Task, User, Workflow,
+)
 from .base import BaseRepository
 
 
@@ -92,5 +94,14 @@ class TaskRepository(BaseRepository[Task]):
         return sorted(rows, key=lambda t: t.created_at, reverse=True)
 
 
+class WorkflowRepository(BaseRepository[Workflow]):
+    model = Workflow
+
+    def for_user(self, user_id: str) -> list[Workflow]:
+        return sorted(self.list(user_id=user_id),
+                      key=lambda w: w.updated_at, reverse=True)
+
+
 __all__ = ["UserRepository", "ProviderRepository", "UsageRepository",
-           "DocumentRepository", "ChunkRepository", "TaskRepository"]
+           "DocumentRepository", "ChunkRepository", "TaskRepository",
+           "WorkflowRepository"]

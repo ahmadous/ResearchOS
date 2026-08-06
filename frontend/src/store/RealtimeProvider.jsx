@@ -16,12 +16,14 @@ export function RealtimeProvider({ children }) {
   const socketRef = useRef(null)
   const [connected, setConnected] = useState(false)
   const [lastEvent, setLastEvent] = useState(null)
+  const [socket, setSocket] = useState(null)
   const [snack, setSnack] = useState(null)
 
   useEffect(() => {
     if (!token) return
     const socket = io('/', { path: '/socket.io', transports: ['websocket', 'polling'] })
     socketRef.current = socket
+    setSocket(socket)
 
     socket.on('connect', () => {
       setConnected(true)
@@ -43,11 +45,11 @@ export function RealtimeProvider({ children }) {
     socket.on('notification', (e) =>
       setSnack({ severity: e.level || 'info', msg: e.title }))
 
-    return () => socket.close()
+    return () => { socket.close(); setSocket(null) }
   }, [token]) // eslint-disable-line
 
   return (
-    <RealtimeContext.Provider value={{ connected, lastEvent }}>
+    <RealtimeContext.Provider value={{ connected, lastEvent, socket }}>
       {children}
       <Snackbar
         open={!!snack}

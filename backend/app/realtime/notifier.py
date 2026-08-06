@@ -40,3 +40,11 @@ def task_failed(user_id: str, task_id: str, error: str) -> None:
 def notify(user_id: str, title: str, level: str = "info") -> None:
     """Notification générique (toast côté client)."""
     emit_to_user(user_id, "notification", {"title": title, "level": level})
+
+
+def workflow_node(user_id: str, task_id: str, node_id: str, status: str,
+                  output: str | None = None) -> None:
+    """Mise à jour de l'état d'un nœud pendant l'exécution d'un workflow."""
+    emit_to_user(user_id, "workflow_node",
+                 {"task_id": task_id, "node_id": node_id, "status": status,
+                  "output": (output[:400] if output else None)})

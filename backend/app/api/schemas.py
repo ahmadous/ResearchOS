@@ -52,8 +52,14 @@ class MessageSchema(Schema):
 
 class TaskCreateSchema(Schema):
     kind = fields.Str(required=True,
-                      validate=validate.OneOf(["agent", "rag_ingest", "scholar_import"]))
+                      validate=validate.OneOf(
+                          ["agent", "rag_ingest", "scholar_import", "workflow"]))
     params = fields.Dict(required=True)
+
+
+class WorkflowSchema(Schema):
+    name = fields.Str(load_default="Nouveau workflow")
+    graph = fields.Dict(load_default=None, allow_none=True)
 
 
 class ScholarSearchSchema(Schema):

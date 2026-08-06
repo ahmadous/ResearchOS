@@ -6,7 +6,7 @@ import {
 } from '@mui/material'
 import {
   AutoAwesome, Dashboard as DashIcon, Hub, DarkMode, LightMode,
-  Logout, MenuBook, Memory, Science, Chat as ChatIcon,
+  Logout, MenuBook, Memory, Science, Chat as ChatIcon, AccountTree,
 } from '@mui/icons-material'
 import { useAuth } from '../store/AuthContext'
 import { useRealtime } from '../store/RealtimeProvider'
@@ -18,6 +18,7 @@ const NAV = [
   { to: '/llm', label: 'LLM Manager', icon: <Memory /> },
   { to: '/chat', label: 'Chat', icon: <ChatIcon /> },
   { to: '/agents', label: 'Agents', icon: <Hub /> },
+  { to: '/workflows', label: 'Workflow Builder', icon: <AccountTree /> },
   { to: '/documents', label: 'Documents (RAG)', icon: <MenuBook /> },
   { to: '/scholar', label: 'Recherche sci.', icon: <Science /> },
 ]
