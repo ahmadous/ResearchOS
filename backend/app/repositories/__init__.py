@@ -4,8 +4,10 @@ from sqlalchemy import func
 
 from ..extensions import db
 from ..models import (
-    Chunk, Document, ModelUsage, ProviderCredential, Task, User, Workflow,
+    Chunk, Document, GraphEntity, GraphRelation, ModelUsage, ProviderCredential,
+    Task, User, Workflow,
 )
+from ..models.graph_entity import normalize
 from .base import BaseRepository
 
 
@@ -102,6 +104,55 @@ class WorkflowRepository(BaseRepository[Workflow]):
                       key=lambda w: w.updated_at, reverse=True)
 
 
+class GraphRepository:
+    """Accès au knowledge graph, avec upsert (fusion) des entités/relations."""
+
+    def upsert_entity(self, user_id: str, name: str, etype: str) -> GraphEntity:
+        norm = normalize(name)
+        existing = db.session.scalars(
+            db.select(GraphEntity).filter_by(user_id=user_id, norm_name=norm, type=etype)
+        ).first()
+        if existing:
+            existing.mentions += 1
+            return existing
+        ent = GraphEntity(user_id=user_id, name=name, norm_name=norm, type=etype)
+        db.session.add(ent)
+        db.session.flush()   # matérialise l'id pour les relations
+        return ent
+
+    def upsert_relation(self, user_id: str, source_id: str, target_id: str,
+                        label: str) -> GraphRelation:
+        existing = db.session.scalars(
+            db.select(GraphRelation).filter_by(
+                user_id=user_id, source_id=source_id, target_id=target_id, label=label)
+        ).first()
+        if existing:
+            existing.weight += 1
+            return existing
+        rel = GraphRelation(user_id=user_id, source_id=source_id,
+                            target_id=target_id, label=label)
+        db.session.add(rel)
+        return rel
+
+    def entities(self, user_id: str) -> list[GraphEntity]:
+        return list(db.session.scalars(
+            db.select(GraphEntity).filter_by(user_id=user_id)).all())
+
+    def relations(self, user_id: str) -> list[GraphRelation]:
+        return list(db.session.scalars(
+            db.select(GraphRelation).filter_by(user_id=user_id)).all())
+
+    def clear(self, user_id: str) -> None:
+        for r in self.relations(user_id):
+            db.session.delete(r)
+        for e in self.entities(user_id):
+            db.session.delete(e)
+        db.session.commit()
+
+    def commit(self) -> None:
+        db.session.commit()
+
+
 __all__ = ["UserRepository", "ProviderRepository", "UsageRepository",
            "DocumentRepository", "ChunkRepository", "TaskRepository",
-           "WorkflowRepository"]
+           "WorkflowRepository", "GraphRepository"]

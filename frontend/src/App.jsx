@@ -11,6 +11,7 @@ import Agents from './pages/Agents'
 import Documents from './pages/Documents'
 import Scholar from './pages/Scholar'
 import WorkflowBuilder from './pages/WorkflowBuilder'
+import KnowledgeGraph from './pages/KnowledgeGraph'
 
 function Protected({ children }) {
   const { token, loading } = useAuth()
@@ -42,6 +43,7 @@ export default function App() {
           <Route path="/agents" element={<Agents />} />
           <Route path="/workflows" element={<WorkflowBuilder />} />
           <Route path="/documents" element={<Documents />} />
+          <Route path="/graph" element={<KnowledgeGraph />} />
           <Route path="/scholar" element={<Scholar />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
