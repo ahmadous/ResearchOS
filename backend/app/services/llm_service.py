@@ -95,6 +95,28 @@ class LLMService:
     def available_providers(self) -> list[str]:
         return ProviderFactory.available()
 
+    def ollama_status(self, user_id: str | None = None) -> dict:
+        """État du démon Ollama local + modèles réellement installés sur la machine.
+
+        Si l'utilisateur a configuré son propre Ollama (ex: distant), on cible son
+        URL ; sinon l'URL locale par défaut.
+        """
+        from flask import current_app
+        base_url = current_app.config.get("OLLAMA_URL", "http://localhost:11434")
+        if user_id:
+            own = next((c for c in self.providers.enabled_for_user(user_id)
+                        if c.provider_key == "ollama" and c.base_url), None)
+            if own:
+                base_url = own.base_url
+        provider = ProviderFactory.create("ollama", base_url=base_url)
+        up = provider.is_up()
+        models = [self._spec_dict(s) for s in provider.models()] if up else []
+        return {"up": up, "base_url": base_url, "count": len(models),
+                "models": models,
+                "hint": None if up else
+                "Démon Ollama injoignable. Lancez `ollama serve`, puis installez "
+                "un modèle avec `ollama pull llama3.2`."}
+
     # --- LLM Manager : gestion des providers ---
     def add_provider(self, user_id: str, provider_key: str, api_key: str = "",
                      base_url: str | None = None, label: str = "default",

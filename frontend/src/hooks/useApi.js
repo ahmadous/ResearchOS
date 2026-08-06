@@ -13,6 +13,9 @@ export const useProviders = () =>
 export const useAvailableProviders = () =>
   useQuery({ queryKey: ['providers-available'], queryFn: get('/llm/providers/available') })
 
+export const useOllama = () =>
+  useQuery({ queryKey: ['ollama'], queryFn: get('/llm/ollama'), refetchInterval: 15000 })
+
 export const useConsumption = () =>
   useQuery({ queryKey: ['consumption'], queryFn: get('/llm/consumption') })
 
