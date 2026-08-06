@@ -41,6 +41,13 @@ backend/app/
 
 ## Démarrage (dev)
 
+**Tout en une commande** (Ollama + backend + frontend, Ctrl-C pour arrêter) :
+```bash
+./start.sh
+```
+
+Ou séparément :
+
 **Backend**
 ```bash
 cd backend
