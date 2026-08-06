@@ -9,6 +9,7 @@ import {
   Logout, MenuBook, Memory, Science, Chat as ChatIcon,
 } from '@mui/icons-material'
 import { useAuth } from '../store/AuthContext'
+import { useRealtime } from '../store/RealtimeProvider'
 import { useColorMode } from '../main'
 
 const WIDTH = 248
@@ -24,6 +25,7 @@ const NAV = [
 export default function AppLayout() {
   const { pathname } = useLocation()
   const { user, logout } = useAuth()
+  const { connected } = useRealtime()
   const { mode, toggle } = useColorMode()
   const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -75,6 +77,13 @@ export default function AppLayout() {
         }}
       >
         <Toolbar sx={{ justifyContent: 'flex-end', gap: 1 }}>
+          <Tooltip title={connected ? 'Temps réel connecté' : 'Temps réel hors ligne'}>
+            <Box sx={{
+              width: 9, height: 9, borderRadius: '50%', mr: 0.5,
+              bgcolor: connected ? 'success.main' : 'text.disabled',
+              boxShadow: connected ? '0 0 8px' : 'none', color: 'success.main',
+            }} />
+          </Tooltip>
           <Tooltip title={mode === 'dark' ? 'Mode clair' : 'Mode sombre'}>
             <IconButton onClick={toggle}>{mode === 'dark' ? <LightMode /> : <DarkMode />}</IconButton>
           </Tooltip>

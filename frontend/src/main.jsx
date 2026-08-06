@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { CssBaseline, ThemeProvider } from '@mui/material'
 import { buildTheme } from './theme'
 import { AuthProvider } from './store/AuthContext'
+import { RealtimeProvider } from './store/RealtimeProvider'
 import App from './App'
 
 const queryClient = new QueryClient({
@@ -38,7 +39,9 @@ function Root() {
         <QueryClientProvider client={queryClient}>
           <BrowserRouter>
             <AuthProvider>
-              <App />
+              <RealtimeProvider>
+                <App />
+              </RealtimeProvider>
             </AuthProvider>
           </BrowserRouter>
         </QueryClientProvider>
