@@ -96,6 +96,26 @@ def test_llm_stream_yields_tokens():
     print(f"[stream]   modèle {chosen.id} -> tokens: '{collected}'")
 
 
+def test_agent_stream_yields_tokens():
+    """AgentService.stream construit le prompt de l'agent puis diffuse les tokens."""
+    from unittest.mock import patch
+    from flask_jwt_extended import decode_token
+    from app.ai.providers.ollama_provider import OllamaProvider
+    from app.services import AgentService
+
+    flask_client, token = _new_user()
+    with APP.app_context():
+        uid = decode_token(token)["sub"]
+        with patch.object(OllamaProvider, "_fetch_installed",
+                          return_value=[{"name": "llama3.2:1b", "details": {"parameter_size": "1.2B"}}]), \
+             patch.object(OllamaProvider, "stream", return_value=iter(["Les ", "trans", "formers…"])):
+            chosen, tokens = AgentService().stream(
+                uid, "research", "les transformers", pinned_model="llama3.2:1b")
+            collected = "".join(tokens)
+    assert chosen.id == "llama3.2:1b" and collected == "Les transformers…"
+    print(f"[agent]    stream {chosen.id} -> '{collected}'")
+
+
 def test_invalid_job_marked_failed():
     flask_client, token = _new_user()
     r = flask_client.post("/api/tasks", headers={"Authorization": f"Bearer {token}"},
@@ -109,6 +129,6 @@ if __name__ == "__main__":
     # Ordre explicite (pas de tri) pour rester proche d'un usage réel.
     for t in [test_join_requires_valid_token, test_join_ok_and_task_progress_events,
               test_task_status_endpoint, test_llm_stream_yields_tokens,
-              test_invalid_job_marked_failed]:
+              test_agent_stream_yields_tokens, test_invalid_job_marked_failed]:
         t()
-    print("\n✅ 5 tests temps réel passés.")
+    print("\n✅ 6 tests temps réel passés.")

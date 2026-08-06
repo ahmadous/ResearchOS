@@ -75,6 +75,33 @@ def _on_chat_stream(data):
         data.get("pinned_model"))
 
 
+def _agent_stream_worker(app, sid, user_id, agent, task, pinned_model):
+    """Diffuse la sortie d'un agent token par token."""
+    with app.app_context():
+        from ..services import AgentService
+        try:
+            chosen, tokens = AgentService().stream(user_id, agent, task, pinned_model)
+            socketio.emit("agent_start", {"agent": agent, "model": chosen.id}, to=sid)
+            for tok in tokens:
+                socketio.emit("agent_token", {"agent": agent, "text": tok}, to=sid)
+            socketio.emit("agent_done", {"agent": agent, "model": chosen.id}, to=sid)
+        except Exception as e:  # noqa: BLE001
+            socketio.emit("agent_error", {"agent": agent, "message": str(e)}, to=sid)
+
+
+@socketio.on("agent_stream")
+def _on_agent_stream(data):
+    data = data or {}
+    user_id = _user_from_token(data.get("token", ""))
+    if not user_id:
+        emit("agent_error", {"message": "token invalide"})
+        return
+    app = current_app._get_current_object()
+    socketio.start_background_task(
+        _agent_stream_worker, app, request.sid, user_id,
+        data.get("agent"), data.get("task", ""), data.get("pinned_model"))
+
+
 def register_socketio_handlers() -> None:
     """Import déclenché depuis l'app factory pour enregistrer les handlers."""
     # Les décorateurs @socketio.on ci-dessus s'exécutent à l'import du module.
