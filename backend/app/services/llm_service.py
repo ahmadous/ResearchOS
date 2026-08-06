@@ -27,6 +27,23 @@ class LLMServiceError(Exception):
     status_code = 400
 
 
+# Consigne système du chat : force la langue de l'utilisateur + forte concision
+# (sur CPU, chaque token coûte du temps -> répondre court = répondre vite).
+CHAT_SYSTEM = (
+    "Tu es l'assistant de ResearchOS. Réponds TOUJOURS dans la même langue que "
+    "l'utilisateur (français par défaut). Réponds en 2 à 3 phrases maximum, de "
+    "façon directe, sauf si l'utilisateur demande explicitement plus de détails."
+)
+# Longueur max par défaut d'une réponse de chat (borne le temps de génération).
+CHAT_MAX_TOKENS = 256
+
+
+def _with_system(messages: list[dict]) -> list[dict]:
+    if any(m.get("role") == "system" for m in messages):
+        return messages
+    return [{"role": "system", "content": CHAT_SYSTEM}, *messages]
+
+
 class LLMService:
     def __init__(self, providers: ProviderRepository | None = None,
                  usage: UsageRepository | None = None):
@@ -179,8 +196,9 @@ class LLMService:
             require_privacy=Privacy(require_privacy) if require_privacy else None,
         )
         req = CompletionRequest(
-            messages=[Message(role=m["role"], content=m["content"]) for m in messages],
-            temperature=temperature, max_tokens=max_tokens,
+            messages=[Message(role=m["role"], content=m["content"])
+                      for m in _with_system(messages)],
+            temperature=temperature, max_tokens=max_tokens or CHAT_MAX_TOKENS,
         )
         chosen = router.choose(ctx, strategy)
         resp = router.complete(req, ctx=ctx, strategy=strategy)
@@ -209,7 +227,9 @@ class LLMService:
         )
         chosen = router.choose(ctx, strategy)
         req = CompletionRequest(
-            messages=[Message(role=m["role"], content=m["content"]) for m in messages])
+            messages=[Message(role=m["role"], content=m["content"])
+                      for m in _with_system(messages)],
+            max_tokens=CHAT_MAX_TOKENS)
         return chosen, router.stream(req, ctx=ctx, strategy=strategy)
 
     # --- Dashboards de consommation ---
