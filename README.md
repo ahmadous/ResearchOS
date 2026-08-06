@@ -34,15 +34,23 @@ backend/app/
 - [x] **Phase 3** — 14 agents spécialisés + orchestrateur (run / pipeline / auto)
 - [x] **Phase 4** — RAG complet (chunking, embeddings, recherche hybride BM25+dense, citations)
 - [x] **Phase 5** — Recherche scientifique (arXiv, OpenAlex, Semantic Scholar, CrossRef, HAL) + import RAG
-- [ ] Phase 6 — WebSocket temps réel + Celery
-- [ ] Phase 7 — Frontend React (Dashboard, Workspace, LLM Manager, Workflow Builder)
+- [x] **Phase 7** — Frontend React (Vite + MUI) : Login, Dashboard, LLM Manager, Chat, Agents, Documents (RAG), Recherche sci.
+- [ ] Phase 6 — WebSocket temps réel + Celery (progression des tâches)
 
 ## Démarrage (dev)
 
+**Backend**
 ```bash
 cd backend
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
-flask --app app:create_app run --debug
+python wsgi.py            # http://localhost:5000  (Swagger : /docs)
+```
+
+**Frontend**
+```bash
+cd frontend
+npm install
+npm run dev              # http://localhost:5173  (proxy /api -> :5000)
 ```
