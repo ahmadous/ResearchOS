@@ -70,6 +70,21 @@ export const useIngest = () => {
 export const useRagQuery = () =>
   useMutation({ mutationFn: (body) => api.post('/rag/query', body).then((r) => r.data) })
 
+// --- Knowledge Graph ---
+export const useGraph = () =>
+  useQuery({ queryKey: ['graph'], queryFn: get('/graph') })
+
+export const useExtractGraph = () =>
+  useMutation({ mutationFn: (body) => api.post('/graph/extract', body).then((r) => r.data) })
+
+export const useClearGraph = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => api.delete('/graph'),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['graph'] }),
+  })
+}
+
 // --- Workflows ---
 export const useWorkflows = () =>
   useQuery({ queryKey: ['workflows'], queryFn: get('/workflows') })

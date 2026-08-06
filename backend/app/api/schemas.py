@@ -62,6 +62,11 @@ class WorkflowSchema(Schema):
     graph = fields.Dict(load_default=None, allow_none=True)
 
 
+class GraphExtractSchema(Schema):
+    text = fields.Str(load_default=None, allow_none=True)
+    document_id = fields.Str(load_default=None, allow_none=True)
+
+
 class ScholarSearchSchema(Schema):
     query = fields.Str(required=True, validate=validate.Length(min=2))
     sources = fields.List(fields.Str(), load_default=None, allow_none=True)

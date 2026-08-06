@@ -35,6 +35,15 @@ def _scholar_import_work(progress, user_id, params):
     return ScholarService().import_paper(user_id, params["paper"])
 
 
+def _graph_extract_work(progress, user_id, params):
+    from ..services import KnowledgeGraphService
+    progress(20, "extraction des entités & relations…")
+    out = KnowledgeGraphService().extract_and_merge(
+        user_id, text=params.get("text"), document_id=params.get("document_id"))
+    progress(90, "fusion dans le graphe…")
+    return out
+
+
 def _workflow_work(progress, user_id, params):
     from ..services import WorkflowService
     progress(5, "planification du graphe…")
@@ -48,6 +57,7 @@ WORK = {
     "rag_ingest": _rag_ingest_work,
     "scholar_import": _scholar_import_work,
     "workflow": _workflow_work,
+    "graph_extract": _graph_extract_work,
 }
 
 
