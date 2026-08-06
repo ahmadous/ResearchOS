@@ -12,10 +12,22 @@ confidentialité prime ou qu'aucun fournisseur cloud n'est configuré.
 """
 from __future__ import annotations
 
+import os
 import re
 import time
 
 import httpx
+
+# Garde le modèle chargé en mémoire entre deux requêtes -> évite le rechargement
+# (plusieurs secondes) à chaque message. Configurable via l'env.
+_KEEP_ALIVE = os.getenv("OLLAMA_KEEP_ALIVE", "30m")
+
+
+def _options(request) -> dict:
+    opts = {"temperature": request.temperature}
+    if request.max_tokens:                       # borne la longueur -> plus rapide
+        opts["num_predict"] = request.max_tokens
+    return opts
 
 from ..base import (
     CompletionRequest,
@@ -136,7 +148,8 @@ class OllamaProvider(LLMProvider):
                     "messages": [{"role": m.role, "content": m.content}
                                  for m in request.messages],
                     "stream": False,
-                    "options": {"temperature": request.temperature},
+                    "keep_alive": _KEEP_ALIVE,
+                    "options": _options(request),
                 },
                 timeout=180,
             )
@@ -168,7 +181,8 @@ class OllamaProvider(LLMProvider):
                     "messages": [{"role": m.role, "content": m.content}
                                  for m in request.messages],
                     "stream": True,
-                    "options": {"temperature": request.temperature},
+                    "keep_alive": _KEEP_ALIVE,
+                    "options": _options(request),
                 },
                 timeout=180,
             ) as r:

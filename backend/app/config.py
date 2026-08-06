@@ -51,6 +51,8 @@ class BaseConfig:
 
     # --- Ollama (socle local, toujours disponible en fallback) ---
     OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
+    # Durée de maintien du modèle en mémoire (évite le rechargement). Ex: "30m", "-1" (toujours).
+    OLLAMA_KEEP_ALIVE = os.getenv("OLLAMA_KEEP_ALIVE", "30m")
 
     # --- RAG / Embeddings ---
     # "hashing" (déterministe, hors-ligne, défaut) ou "ollama" (nomic-embed-text).
