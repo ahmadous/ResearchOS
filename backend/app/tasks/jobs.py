@@ -35,10 +35,19 @@ def _scholar_import_work(progress, user_id, params):
     return ScholarService().import_paper(user_id, params["paper"])
 
 
+def _workflow_work(progress, user_id, params):
+    from ..services import WorkflowService
+    progress(5, "planification du graphe…")
+    return WorkflowService().execute(
+        user_id, params["workflow_id"], params["_task_id"],
+        progress=progress, inputs=params.get("inputs"))
+
+
 WORK = {
     "agent": _agent_work,
     "rag_ingest": _rag_ingest_work,
     "scholar_import": _scholar_import_work,
+    "workflow": _workflow_work,
 }
 
 
@@ -61,7 +70,9 @@ def run_job(app, task_id: str, user_id: str, kind: str, params: dict) -> None:
 
         try:
             work = WORK[kind]
-            result = work(progress, user_id, params)
+            # Certains jobs (workflow) ont besoin de l'id de tâche pour émettre
+            # des événements ciblés : on l'injecte dans les params.
+            result = work(progress, user_id, {**params, "_task_id": task_id})
             task.status = COMPLETED
             task.progress = 100
             task.result = result

@@ -55,6 +55,10 @@ class AgentService:
         registry = AgentRegistry(RouterLLMClient(user_id, self.llm_service))
         return Orchestrator(registry)
 
+    def build_orchestrator(self, user_id: str) -> Orchestrator:
+        """Orchestrateur prêt à l'emploi (utilisé par le moteur de workflows)."""
+        return self._orchestrator(user_id)
+
     def _guard_models(self, user_id: str) -> None:
         if not self.llm_service.router_for(user_id, record_usage=False).registry.specs():
             raise LLMServiceError(

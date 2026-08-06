@@ -35,6 +35,7 @@ backend/app/
 - [x] **Phase 4** — RAG complet (chunking, embeddings, recherche hybride BM25+dense, citations)
 - [x] **Phase 5** — Recherche scientifique (arXiv, OpenAlex, Semantic Scholar, CrossRef, HAL) + import RAG
 - [x] **Phase 6** — WebSocket temps réel (SocketIO) + tâches asynchrones (runner local, Celery optionnel)
+- [x] **Bonus** — Workflow Builder (drag & drop d'agents, exécution DAG + progression temps réel par nœud)
 - [x] **Phase 7** — Frontend React (Vite + MUI) : Login, Dashboard, LLM Manager, Chat, Agents, Documents (RAG), Recherche sci., temps réel
 
 ## Démarrage (dev)

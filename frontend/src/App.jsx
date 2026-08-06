@@ -10,6 +10,7 @@ import Chat from './pages/Chat'
 import Agents from './pages/Agents'
 import Documents from './pages/Documents'
 import Scholar from './pages/Scholar'
+import WorkflowBuilder from './pages/WorkflowBuilder'
 
 function Protected({ children }) {
   const { token, loading } = useAuth()
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="/llm" element={<LLMManager />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/agents" element={<Agents />} />
+          <Route path="/workflows" element={<WorkflowBuilder />} />
           <Route path="/documents" element={<Documents />} />
           <Route path="/scholar" element={<Scholar />} />
         </Route>

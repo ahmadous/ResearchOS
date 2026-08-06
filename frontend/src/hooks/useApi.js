@@ -70,6 +70,23 @@ export const useIngest = () => {
 export const useRagQuery = () =>
   useMutation({ mutationFn: (body) => api.post('/rag/query', body).then((r) => r.data) })
 
+// --- Workflows ---
+export const useWorkflows = () =>
+  useQuery({ queryKey: ['workflows'], queryFn: get('/workflows') })
+
+export const useSaveWorkflow = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, name, graph }) =>
+      (id ? api.put(`/workflows/${id}`, { name, graph })
+          : api.post('/workflows', { name, graph })).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['workflows'] }),
+  })
+}
+
+export const useRunWorkflow = () =>
+  useMutation({ mutationFn: (id) => api.post(`/workflows/${id}/run`).then((r) => r.data) })
+
 // --- Scholar ---
 export const useScholarSearch = () =>
   useMutation({ mutationFn: (body) => api.post('/scholar/search', body).then((r) => r.data) })
