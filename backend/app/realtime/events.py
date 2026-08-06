@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import logging
 
+from flask import current_app, request
 from flask_jwt_extended import decode_token
 from flask_socketio import emit, join_room
 
@@ -42,6 +43,36 @@ def _on_join(data):
 @socketio.on("disconnect")
 def _on_disconnect():
     log.debug("client déconnecté")
+
+
+def _stream_worker(app, sid, user_id, messages, strategy, pinned_model):
+    """Diffuse les tokens d'une complétion vers un client (thread de fond)."""
+    with app.app_context():
+        from ..services import LLMService
+        try:
+            chosen, tokens = LLMService().stream(
+                user_id, messages, strategy=strategy, pinned_model=pinned_model)
+            socketio.emit("chat_start", {"model": chosen.id, "provider": chosen.provider},
+                          to=sid)
+            for tok in tokens:
+                socketio.emit("chat_token", {"text": tok}, to=sid)
+            socketio.emit("chat_done", {"model": chosen.id}, to=sid)
+        except Exception as e:  # noqa: BLE001
+            socketio.emit("chat_error", {"message": str(e)}, to=sid)
+
+
+@socketio.on("chat_stream")
+def _on_chat_stream(data):
+    data = data or {}
+    user_id = _user_from_token(data.get("token", ""))
+    if not user_id:
+        emit("chat_error", {"message": "token invalide"})
+        return
+    app = current_app._get_current_object()
+    socketio.start_background_task(
+        _stream_worker, app, request.sid, user_id,
+        data.get("messages", []), data.get("strategy", "balanced"),
+        data.get("pinned_model"))
 
 
 def register_socketio_handlers() -> None:

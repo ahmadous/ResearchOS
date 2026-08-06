@@ -194,6 +194,24 @@ class LLMService:
                       "latency_ms": round(resp.latency_ms, 1)},
         }
 
+    # --- Chat en streaming (tokens au fil de l'eau) ---
+    def stream(self, user_id: str, messages: list[dict], *,
+               strategy: str = "balanced", pinned_model: str | None = None,
+               require_privacy: str | None = None):
+        """Génère les tokens progressivement. Renvoie d'abord le modèle choisi."""
+        router = self.router_for(user_id, record_usage=False)
+        if not router.registry.specs():
+            raise LLMServiceError(
+                "Aucun modèle disponible. Configurez un fournisseur ou démarrez Ollama.")
+        ctx = RoutingContext(
+            pinned_model=pinned_model,
+            require_privacy=Privacy(require_privacy) if require_privacy else None,
+        )
+        chosen = router.choose(ctx, strategy)
+        req = CompletionRequest(
+            messages=[Message(role=m["role"], content=m["content"]) for m in messages])
+        return chosen, router.stream(req, ctx=ctx, strategy=strategy)
+
     # --- Dashboards de consommation ---
     def consumption(self, user_id: str) -> dict:
         return {

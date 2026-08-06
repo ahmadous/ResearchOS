@@ -76,6 +76,26 @@ def test_task_status_endpoint():
     print("[status]   GET /tasks/{id} et liste OK")
 
 
+def test_llm_stream_yields_tokens():
+    """LLMService.stream renvoie le modèle choisi puis les tokens au fil de l'eau."""
+    from unittest.mock import patch
+    from flask_jwt_extended import decode_token
+    from app.ai.providers.ollama_provider import OllamaProvider
+    from app.services import LLMService
+
+    flask_client, token = _new_user()
+    with APP.app_context():
+        uid = decode_token(token)["sub"]
+        with patch.object(OllamaProvider, "_fetch_installed",
+                          return_value=[{"name": "qwen2.5:3b", "details": {"parameter_size": "3.1B"}}]), \
+             patch.object(OllamaProvider, "stream", return_value=iter(["Bon", "jour", " !"])):
+            chosen, tokens = LLMService().stream(
+                uid, [{"role": "user", "content": "salut"}], strategy="speed")
+            collected = "".join(tokens)
+    assert chosen.id == "qwen2.5:3b" and collected == "Bonjour !"
+    print(f"[stream]   modèle {chosen.id} -> tokens: '{collected}'")
+
+
 def test_invalid_job_marked_failed():
     flask_client, token = _new_user()
     r = flask_client.post("/api/tasks", headers={"Authorization": f"Bearer {token}"},
@@ -88,6 +108,7 @@ def test_invalid_job_marked_failed():
 if __name__ == "__main__":
     # Ordre explicite (pas de tri) pour rester proche d'un usage réel.
     for t in [test_join_requires_valid_token, test_join_ok_and_task_progress_events,
-              test_task_status_endpoint, test_invalid_job_marked_failed]:
+              test_task_status_endpoint, test_llm_stream_yields_tokens,
+              test_invalid_job_marked_failed]:
         t()
-    print("\n✅ 4 tests temps réel passés.")
+    print("\n✅ 5 tests temps réel passés.")
