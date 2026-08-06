@@ -1,72 +1,125 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Box, Card, CardContent, Chip, IconButton, MenuItem, Paper, Stack,
   TextField, Typography, ToggleButton, ToggleButtonGroup,
 } from '@mui/material'
-import { Send } from '@mui/icons-material'
+import { Send, Bolt } from '@mui/icons-material'
 import Page from '../components/Page'
-import { errMsg } from '../api/client'
-import { useChat } from '../hooks/useApi'
+import { TOKEN_KEY } from '../api/client'
+import { useModels } from '../hooks/useApi'
+import { useRealtime } from '../store/RealtimeProvider'
 
 const STRATEGIES = ['balanced', 'cost', 'speed', 'quality', 'privacy']
 
 export default function Chat() {
-  const chat = useChat()
+  const { socket } = useRealtime()
+  const { data: modelsData } = useModels()
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [strategy, setStrategy] = useState('balanced')
+  const [pinned, setPinned] = useState('')     // '' = routage auto
+  const [streaming, setStreaming] = useState(false)
   const endRef = useRef(null)
+  const t0 = useRef(0)
 
-  const send = async () => {
-    if (!input.trim()) return
-    const next = [...messages, { role: 'user', content: input }]
-    setMessages(next)
-    setInput('')
-    try {
-      const r = await chat.mutateAsync({ messages: next.map((m) => ({ role: m.role, content: m.content })), strategy })
-      setMessages([...next, { role: 'assistant', content: r.content, routing: r.routing, usage: r.usage }])
-    } catch (e) {
-      setMessages([...next, { role: 'assistant', content: `⚠️ ${errMsg(e)}`, error: true }])
+  const models = modelsData?.models || []
+
+  // Abonnement aux événements de streaming.
+  useEffect(() => {
+    if (!socket) return
+    const patchLast = (fn) =>
+      setMessages((m) => {
+        const copy = [...m]
+        const last = copy[copy.length - 1]
+        if (last && last.role === 'assistant') copy[copy.length - 1] = fn(last)
+        return copy
+      })
+    const onStart = (e) => patchLast((l) => ({ ...l, model: e.model, provider: e.provider }))
+    const onToken = (e) => patchLast((l) => ({ ...l, content: l.content + e.text }))
+    const onDone = () => {
+      patchLast((l) => ({ ...l, ms: Math.round(performance.now() - t0.current) }))
+      setStreaming(false)
     }
-    setTimeout(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
+    const onErr = (e) => { patchLast((l) => ({ ...l, content: `⚠️ ${e.message}`, error: true })); setStreaming(false) }
+    socket.on('chat_start', onStart)
+    socket.on('chat_token', onToken)
+    socket.on('chat_done', onDone)
+    socket.on('chat_error', onErr)
+    return () => {
+      socket.off('chat_start', onStart); socket.off('chat_token', onToken)
+      socket.off('chat_done', onDone); socket.off('chat_error', onErr)
+    }
+  }, [socket])
+
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
+
+  const send = () => {
+    if (!input.trim() || streaming) return
+    if (!socket) return
+    const history = [...messages, { role: 'user', content: input }]
+    setMessages([...history, { role: 'assistant', content: '' }])   // placeholder streamé
+    setInput('')
+    setStreaming(true)
+    t0.current = performance.now()
+    socket.emit('chat_stream', {
+      token: localStorage.getItem(TOKEN_KEY),
+      messages: history.map((m) => ({ role: m.role, content: m.content })),
+      strategy,
+      pinned_model: pinned || undefined,
+    })
   }
 
   return (
     <Page
       title="Chat"
-      subtitle="Complétion routée automatiquement vers le meilleur modèle"
+      subtitle="Réponse en streaming, routée automatiquement (ou modèle imposé)"
       action={
-        <ToggleButtonGroup size="small" exclusive value={strategy} onChange={(_, v) => v && setStrategy(v)}>
-          {STRATEGIES.map((s) => <ToggleButton key={s} value={s}>{s}</ToggleButton>)}
-        </ToggleButtonGroup>
+        <Stack direction="row" gap={1} alignItems="center">
+          <TextField select size="small" value={pinned} onChange={(e) => setPinned(e.target.value)}
+            sx={{ minWidth: 150 }}
+            SelectProps={{ displayEmpty: true }}>
+            <MenuItem value=""><em>Auto ({strategy})</em></MenuItem>
+            {models.map((m) => (
+              <MenuItem key={m.id} value={m.id}>
+                {m.id}{m.input_cost === 0 ? ' ⚡' : ''}
+              </MenuItem>
+            ))}
+          </TextField>
+          <ToggleButtonGroup size="small" exclusive value={strategy}
+            onChange={(_, v) => v && setStrategy(v)} disabled={!!pinned}>
+            {STRATEGIES.map((s) => <ToggleButton key={s} value={s}>{s}</ToggleButton>)}
+          </ToggleButtonGroup>
+        </Stack>
       }
     >
       <Card sx={{ height: 'calc(100vh - 260px)', display: 'flex', flexDirection: 'column' }}>
         <CardContent sx={{ flex: 1, overflowY: 'auto' }}>
           {messages.length === 0 && (
-            <Stack height="100%" alignItems="center" justifyContent="center">
-              <Typography color="text.secondary">Posez une question — le routeur choisira le modèle selon « {strategy} ».</Typography>
+            <Stack height="100%" alignItems="center" justifyContent="center" gap={1}>
+              <Bolt color="primary" />
+              <Typography color="text.secondary">
+                Posez une question — la réponse s'affiche en direct.
+                {pinned ? ` Modèle imposé : ${pinned}.` : ` Routage « ${strategy} ».`}
+              </Typography>
             </Stack>
           )}
           <Stack gap={2}>
             {messages.map((m, i) => (
               <Stack key={i} alignItems={m.role === 'user' ? 'flex-end' : 'flex-start'}>
-                <Paper
-                  variant="outlined"
-                  sx={{
-                    p: 1.5, px: 2, maxWidth: '80%',
-                    bgcolor: m.role === 'user' ? 'primary.main' : 'background.paper',
-                    color: m.role === 'user' ? '#fff' : 'text.primary',
-                    borderColor: m.error ? 'error.main' : 'divider',
-                  }}
-                >
-                  <Typography variant="body2" whiteSpace="pre-wrap">{m.content}</Typography>
+                <Paper variant="outlined" sx={{
+                  p: 1.5, px: 2, maxWidth: '80%',
+                  bgcolor: m.role === 'user' ? 'primary.main' : 'background.paper',
+                  color: m.role === 'user' ? '#fff' : 'text.primary',
+                  borderColor: m.error ? 'error.main' : 'divider',
+                }}>
+                  <Typography variant="body2" whiteSpace="pre-wrap">
+                    {m.content || (streaming && i === messages.length - 1 ? '…' : '')}
+                  </Typography>
                 </Paper>
-                {m.routing && (
+                {m.role === 'assistant' && m.model && (
                   <Stack direction="row" gap={0.5} mt={0.5}>
-                    <Chip size="small" variant="outlined" label={`${m.routing.chosen_model}`} />
-                    <Chip size="small" variant="outlined" label={`${m.usage.latency_ms} ms`} />
-                    <Chip size="small" variant="outlined" label={`$${m.usage.cost_usd}`} />
+                    <Chip size="small" variant="outlined" label={m.model} />
+                    {m.ms != null && <Chip size="small" variant="outlined" label={`${m.ms} ms`} />}
                   </Stack>
                 )}
               </Stack>
@@ -76,12 +129,10 @@ export default function Chat() {
         </CardContent>
         <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
           <Stack direction="row" gap={1}>
-            <TextField
-              fullWidth size="small" placeholder="Votre message…" value={input}
+            <TextField fullWidth size="small" placeholder="Votre message…" value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), send())}
-            />
-            <IconButton color="primary" onClick={send} disabled={chat.isPending}><Send /></IconButton>
+              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), send())} />
+            <IconButton color="primary" onClick={send} disabled={streaming || !socket}><Send /></IconButton>
           </Stack>
         </Box>
       </Card>
