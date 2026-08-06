@@ -76,6 +76,26 @@ class AgentService:
             raise LLMServiceError(f"Agent inconnu: {agent}")
         return orch._as_dict(orch.run(agent, task, goal=goal))
 
+    def stream(self, user_id: str, agent: str, task: str,
+               pinned_model: str | None = None):
+        """Streaming d'un agent : construit son prompt puis diffuse les tokens.
+
+        L'utilisateur peut imposer un modèle rapide (ex: llama3.2:1b) au lieu de
+        subir la stratégie « quality » de l'agent (qui vise le plus gros modèle).
+        """
+        self._guard_models(user_id)
+        orch = self._orchestrator(user_id)
+        if not orch.registry.has(agent):
+            raise LLMServiceError(f"Agent inconnu: {agent}")
+        ag = orch.registry.get(agent)
+        ctx = orch._new_context(goal=task)
+        messages = ag.build_messages(task, ctx)     # system + contexte + tâche
+        router = self.llm_service.router_for(user_id, record_usage=False)
+        rctx = RoutingContext(pinned_model=pinned_model)
+        chosen = router.choose(rctx, ag.strategy)
+        req = CompletionRequest(messages=messages, max_tokens=512)
+        return chosen, router.stream(req, ctx=rctx, strategy=ag.strategy)
+
     def pipeline(self, user_id: str, steps: list[dict], goal: str) -> dict:
         self._guard_models(user_id)
         try:
