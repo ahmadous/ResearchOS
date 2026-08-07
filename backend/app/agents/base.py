@@ -55,9 +55,11 @@ Dispatch = Callable[[str, str, "AgentContext"], AgentResult]
 
 @dataclass
 class AgentContext:
-    """État partagé entre agents (Blackboard) + moyen d'appeler un pair."""
+    """État partagé entre agents (Blackboard) + outils réels + appel de pairs."""
     goal: str
-    blackboard: dict[str, str] = field(default_factory=dict)   # agent -> dernière sortie
+    blackboard: dict[str, str] = field(default_factory=dict)   # agent -> dernière sortie (texte)
+    data: dict = field(default_factory=dict)                   # données structurées partagées
+    tools: dict = field(default_factory=dict)                  # outils réels (scholar, rag, kg…)
     history: list[Message] = field(default_factory=list)
     available_agents: list[str] = field(default_factory=list)
     trace: list[dict] = field(default_factory=list)            # journal d'exécution
@@ -68,6 +70,11 @@ class AgentContext:
         if self._dispatch is None:
             raise RuntimeError("AgentContext non relié à un orchestrateur")
         return self._dispatch(agent_name, task, self)
+
+    def use_tool(self, name: str, *args, **kwargs):
+        """Appelle un outil réel s'il est disponible, sinon renvoie None."""
+        fn = self.tools.get(name)
+        return fn(*args, **kwargs) if fn else None
 
 
 class BaseAgent:

@@ -14,13 +14,15 @@ from .registry import AgentRegistry
 
 
 class Orchestrator:
-    def __init__(self, registry: AgentRegistry):
+    def __init__(self, registry: AgentRegistry, tools: dict | None = None):
         self.registry = registry
+        self.tools = tools or {}
 
     def _new_context(self, goal: str) -> AgentContext:
         return AgentContext(
             goal=goal,
             available_agents=self.registry.names(),
+            tools=self.tools,
             _dispatch=self._dispatch,
         )
 

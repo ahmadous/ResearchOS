@@ -127,4 +127,9 @@ class PlanningAgent(BaseAgent):
 
 
 def all_agent_classes() -> list[type[BaseAgent]]:
-    return [PlanningAgent] + [_make_agent(s) for s in SPECS]
+    # Les agents outillés (vraie recherche, RAG, KG) remplacent les versions LLM
+    # génériques du même nom ; le reste garde le comportement LLM déclaratif.
+    from .tool_agents import TOOL_AGENTS
+    tool_names = {c.name for c in TOOL_AGENTS}
+    generic = [_make_agent(s) for s in SPECS if s.name not in tool_names]
+    return [PlanningAgent, *TOOL_AGENTS, *generic]

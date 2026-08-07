@@ -52,9 +52,34 @@ class AgentService:
     def __init__(self, llm_service: LLMService | None = None):
         self.llm_service = llm_service or LLMService()
 
+    def _tools(self, user_id: str) -> dict:
+        """Vrais outils liés à l'utilisateur, injectés dans les agents."""
+        def scholar_search(query, limit=6):
+            from .scholar_service import ScholarService
+            return ScholarService().search(query, None, limit)["results"][:limit]
+
+        def rag_context(query, k=4):
+            from ..rag import get_embedder, hybrid_search
+            from ..repositories import ChunkRepository
+            recs = ChunkRepository().records_for_user(user_id)
+            if not recs:
+                return ""
+            from flask import current_app
+            emb = get_embedder(current_app.config.get("EMBEDDING_BACKEND", "hashing"),
+                               base_url=current_app.config.get("OLLAMA_URL", ""))
+            hits = hybrid_search(query, emb.embed(query), recs, k=k)
+            return "\n\n".join(h.record["text"] for h in hits)
+
+        def kg_extract(text):
+            from .knowledge_service import KnowledgeGraphService
+            return KnowledgeGraphService().extract_and_merge(user_id, text=text)
+
+        return {"scholar_search": scholar_search, "rag_context": rag_context,
+                "kg_extract": kg_extract}
+
     def _orchestrator(self, user_id: str) -> Orchestrator:
         registry = AgentRegistry(RouterLLMClient(user_id, self.llm_service))
-        return Orchestrator(registry)
+        return Orchestrator(registry, tools=self._tools(user_id))
 
     def build_orchestrator(self, user_id: str) -> Orchestrator:
         """Orchestrateur prêt à l'emploi (utilisé par le moteur de workflows)."""
@@ -90,6 +115,7 @@ class AgentService:
             raise LLMServiceError(f"Agent inconnu: {agent}")
         ag = orch.registry.get(agent)
         ctx = orch._new_context(goal=task)
+        task = ag.preprocess(task, ctx)             # déclenche les vrais outils (scholar/RAG/KG)
         messages = ag.build_messages(task, ctx)     # system + contexte + tâche
         router = self.llm_service.router_for(user_id, record_usage=False)
         rctx = RoutingContext(pinned_model=pinned_model)
