@@ -17,6 +17,8 @@ class Report(UUIDMixin, TimestampMixin, db.Model):
     query: Mapped[str] = mapped_column(String(400))
     title: Mapped[str] = mapped_column(String(400), default="Rapport")
     content: Mapped[str] = mapped_column(Text, default="")
+    synthesis: Mapped[str] = mapped_column(Text, default="")   # synthèse IA OPTIONNELLE
+    bibtex: Mapped[str] = mapped_column(Text, default="")
     references_json: Mapped[str] = mapped_column(Text, default="[]")
     n_sources: Mapped[int] = mapped_column(Integer, default=0)
     pdf_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
@@ -36,7 +38,9 @@ class Report(UUIDMixin, TimestampMixin, db.Model):
         d = {"id": self.id, "query": self.query, "title": self.title,
              "n_sources": self.n_sources, "has_pdf": bool(self.pdf_path),
              "created_at": self.created_at.isoformat()}
+        d["has_synthesis"] = bool(self.synthesis)
         if full:
             d["content"] = self.content
+            d["synthesis"] = self.synthesis
             d["references"] = self.references
         return d

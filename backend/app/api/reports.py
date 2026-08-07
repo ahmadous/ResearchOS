@@ -1,56 +1,52 @@
-"""Rapports API — générer (async), lister, consulter, télécharger le PDF."""
+"""Revue de littérature API — recherche immédiate (sync) + export PDF.
+
+- POST /api/reports/search : renvoie directement les articles (+ BibTeX, + synthèse
+  optionnelle) pour affichage interactif.
+- POST /api/reports/pdf    : rend un PDF (tableau comparatif + résumés) depuis les
+  articles fournis.
+"""
 from __future__ import annotations
+
+from io import BytesIO
 
 from flask import send_file
 from flask.views import MethodView
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from flask_smorest import Blueprint, abort
 
-from ..services import LLMServiceError, ReportService, TaskService
-from .schemas import ReportCreateSchema
+from ..services import LLMServiceError, ReportService
+from .schemas import ReportPdfSchema, ReportSearchSchema
 
 blp = Blueprint("reports", __name__, url_prefix="/api/reports",
-                description="Rapports (recherche réelle -> état de l'art -> PDF)")
+                description="Revue de littérature (recherche réelle, tableau, PDF, BibTeX)")
 
 
 def _uid() -> str:
     return get_jwt_identity()
 
 
-@blp.route("")
-class Reports(MethodView):
+@blp.route("/search")
+class Search(MethodView):
     @jwt_required()
-    def get(self):
-        return {"reports": ReportService().list(_uid())}
-
-    @jwt_required()
-    @blp.arguments(ReportCreateSchema)
+    @blp.arguments(ReportSearchSchema)
     def post(self, data):
-        # Génération asynchrone : progression via WebSocket.
-        params = {k: v for k, v in data.items() if v is not None}
         try:
-            return TaskService().enqueue(_uid(), "report", params), 202
+            return ReportService().search(
+                _uid(), data["query"], sources=data.get("sources"),
+                limit=data["limit"], synthesize=data["synthesize"],
+                pinned_model=data.get("pinned_model"))
         except LLMServiceError as e:
             abort(400, message=str(e))
+        except Exception as e:  # réseau/API tierce
+            abort(502, message=f"Échec de la recherche: {e}")
 
 
-@blp.route("/<report_id>")
-class ReportItem(MethodView):
+@blp.route("/pdf")
+class Pdf(MethodView):
     @jwt_required()
-    def get(self, report_id):
-        try:
-            return ReportService().get(_uid(), report_id, full=True)
-        except LLMServiceError as e:
-            abort(404, message=str(e))
-
-
-@blp.route("/<report_id>/pdf")
-class ReportPdf(MethodView):
-    @jwt_required()
-    def get(self, report_id):
-        try:
-            path = ReportService().pdf_path(_uid(), report_id)
-        except LLMServiceError as e:
-            abort(404, message=str(e))
-        return send_file(path, mimetype="application/pdf", as_attachment=True,
-                         download_name=f"rapport-{report_id[:8]}.pdf")
+    @blp.arguments(ReportPdfSchema)
+    def post(self, data):
+        pdf = ReportService().render_pdf(
+            data["query"], data["papers"], data.get("synthesis", ""))
+        return send_file(BytesIO(pdf), mimetype="application/pdf", as_attachment=True,
+                         download_name="revue-litterature.pdf")

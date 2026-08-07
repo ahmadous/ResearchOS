@@ -90,11 +90,18 @@ class MemoryRecallSchema(Schema):
     project = fields.Str(load_default=None, allow_none=True)
 
 
-class ReportCreateSchema(Schema):
+class ReportSearchSchema(Schema):
     query = fields.Str(required=True, validate=validate.Length(min=3))
     sources = fields.List(fields.Str(), load_default=None, allow_none=True)
-    limit = fields.Int(load_default=8, validate=validate.Range(min=2, max=20))
+    limit = fields.Int(load_default=12, validate=validate.Range(min=2, max=30))
+    synthesize = fields.Bool(load_default=False)   # synthèse IA optionnelle
     pinned_model = fields.Str(load_default=None, allow_none=True)
+
+
+class ReportPdfSchema(Schema):
+    query = fields.Str(required=True)
+    papers = fields.List(fields.Dict(), required=True)
+    synthesis = fields.Str(load_default="")
 
 
 class ScholarSearchSchema(Schema):

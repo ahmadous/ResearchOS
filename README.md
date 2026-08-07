@@ -39,7 +39,7 @@ backend/app/
 - [x] **Bonus** — Knowledge Graph interactif (extraction entités/relations, viz force-directed)
 - [x] **Bonus** — Évaluation auto des réponses (fact-check, score de confiance, corrections)
 - [x] **Bonus** — Memory Engine (mémoire persistante scopée, rappel sémantique, injection auto dans le chat)
-- [x] **Bonus** — Générateur de rapports (recherche d'articles réelle -> état de l'art cité -> PDF)
+- [x] **Bonus** — Revue de littérature (recherche réelle EN PARALLÈLE -> tableau comparatif interactif -> BibTeX/PDF ; synthèse IA optionnelle)
 - [x] **Phase 7** — Frontend React (Vite + MUI) : Login, Dashboard, LLM Manager, Chat, Agents, Documents (RAG), Recherche sci., temps réel
 
 ## Démarrage (dev)

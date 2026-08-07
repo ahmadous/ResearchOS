@@ -130,25 +130,29 @@ export const useSaveWorkflow = () => {
 export const useRunWorkflow = () =>
   useMutation({ mutationFn: (id) => api.post(`/workflows/${id}/run`).then((r) => r.data) })
 
-// --- Rapports ---
-export const useReports = () =>
-  useQuery({ queryKey: ['reports'], queryFn: get('/reports') })
+// --- Revue de littérature (recherche immédiate) ---
+export const useReportSearch = () =>
+  useMutation({ mutationFn: (body) => api.post('/reports/search', body).then((r) => r.data) })
 
-export const useGenerateReport = () =>
-  useMutation({ mutationFn: (body) => api.post('/reports', body).then((r) => r.data) })
-
-// Télécharge le PDF avec le header JWT puis déclenche l'enregistrement.
-export const downloadReportPdf = async (id) => {
-  const res = await api.get(`/reports/${id}/pdf`, { responseType: 'blob' })
-  const url = URL.createObjectURL(res.data)
+const saveBlob = (blob, filename) => {
+  const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `rapport-${id.slice(0, 8)}.pdf`
+  a.download = filename
   document.body.appendChild(a)
   a.click()
   a.remove()
   URL.revokeObjectURL(url)
 }
+
+// Export PDF (rendu serveur depuis les articles déjà affichés).
+export const exportReportPdf = async ({ query, papers, synthesis }) => {
+  const res = await api.post('/reports/pdf', { query, papers, synthesis }, { responseType: 'blob' })
+  saveBlob(res.data, 'revue-litterature.pdf')
+}
+// Export BibTeX (chaîne déjà reçue -> blob côté client).
+export const exportBibtex = (bibtex) =>
+  saveBlob(new Blob([bibtex], { type: 'application/x-bibtex' }), 'references.bib')
 
 // --- Scholar ---
 export const useScholarSearch = () =>
