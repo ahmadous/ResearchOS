@@ -59,8 +59,65 @@ class WorkflowItem(MethodView):
 class RunWorkflow(MethodView):
     @jwt_required()
     def post(self, wf_id):
-        # Lancé comme tâche asynchrone : la progression arrive par WebSocket.
+        # Crée une exécution puis l'enfile ; la progression arrive par WebSocket.
         try:
-            return TaskService().enqueue(_uid(), "workflow", {"workflow_id": wf_id}), 202
+            run = WorkflowService().create_run(_uid(), wf_id)
+            task = TaskService().enqueue(_uid(), "workflow", {"run_id": run["id"]})
+            return {"run": run, "task": task}, 202
         except LLMServiceError as e:
             abort(400, message=str(e))
+
+
+@blp.route("/runs")
+class Runs(MethodView):
+    @jwt_required()
+    def get(self):
+        return {"runs": WorkflowService().list_runs(_uid())}
+
+
+@blp.route("/runs/<run_id>")
+class RunItem(MethodView):
+    @jwt_required()
+    def get(self, run_id):
+        try:
+            return WorkflowService().get_run(_uid(), run_id)
+        except LLMServiceError as e:
+            abort(404, message=str(e))
+
+
+@blp.route("/runs/<run_id>/pause")
+class PauseRun(MethodView):
+    @jwt_required()
+    def post(self, run_id):
+        try:
+            return WorkflowService().pause_run(_uid(), run_id)
+        except LLMServiceError as e:
+            abort(404, message=str(e))
+
+
+@blp.route("/runs/<run_id>/cancel")
+class CancelRun(MethodView):
+    @jwt_required()
+    def post(self, run_id):
+        try:
+            return WorkflowService().cancel_run(_uid(), run_id)
+        except LLMServiceError as e:
+            abort(404, message=str(e))
+
+
+@blp.route("/runs/<run_id>/resume")
+class ResumeRun(MethodView):
+    @jwt_required()
+    def post(self, run_id):
+        # Remet en 'running' et réenfile une tâche qui reprend là où on s'était arrêté.
+        try:
+            svc = WorkflowService()
+            run = svc._run(_uid(), run_id)
+            if run.status not in ("paused", "pending"):
+                abort(409, message=f"Exécution non reprenable (statut: {run.status})")
+            from ..extensions import db as _db
+            run.status = "running"; _db.session.commit()
+            task = TaskService().enqueue(_uid(), "workflow", {"run_id": run_id})
+            return {"run": run.to_dict(), "task": task}, 202
+        except LLMServiceError as e:
+            abort(404, message=str(e))

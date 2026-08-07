@@ -47,9 +47,8 @@ def _graph_extract_work(progress, user_id, params):
 def _workflow_work(progress, user_id, params):
     from ..services import WorkflowService
     progress(5, "planification du graphe…")
-    return WorkflowService().execute(
-        user_id, params["workflow_id"], params["_task_id"],
-        progress=progress, inputs=params.get("inputs"))
+    return WorkflowService().execute_run(
+        user_id, params["run_id"], params["_task_id"], progress=progress)
 
 
 WORK = {

@@ -9,7 +9,8 @@ from .task import Task
 from .usage import ModelUsage
 from .user import User
 from .workflow import Workflow
+from .workflow_run import WorkflowRun
 
 __all__ = ["User", "ProviderCredential", "ModelUsage", "Document", "Chunk",
            "Task", "Workflow", "GraphEntity", "GraphRelation", "MemoryItem",
-           "Report", "Conversation", "ChatMessage"]
+           "Report", "Conversation", "ChatMessage", "WorkflowRun"]
