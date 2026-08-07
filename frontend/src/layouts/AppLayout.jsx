@@ -24,7 +24,7 @@ const NAV = [
   { to: '/graph', label: 'Knowledge Graph', icon: <BubbleChart /> },
   { to: '/memory', label: 'Mémoire', icon: <Psychology /> },
   { to: '/scholar', label: 'Recherche sci.', icon: <Science /> },
-  { to: '/reports', label: 'Rapports', icon: <Description /> },
+  { to: '/reports', label: 'Revue littér.', icon: <Description /> },
 ]
 
 export default function AppLayout() {

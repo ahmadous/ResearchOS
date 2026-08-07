@@ -11,7 +11,7 @@ import httpx
 
 from .base import Paper, PaperSource
 
-_TIMEOUT = 15
+_TIMEOUT = 10   # court : un outil de recherche doit rester réactif
 _HEADERS = {"User-Agent": "ResearchOS/1.0 (mailto:research@researchos.dev)"}
 
 
