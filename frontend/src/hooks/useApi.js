@@ -48,6 +48,10 @@ export const useTestModel = () =>
 export const useChat = () =>
   useMutation({ mutationFn: (body) => api.post('/chat/complete', body).then((r) => r.data) })
 
+// --- Évaluation (fact-check) ---
+export const useEvaluate = () =>
+  useMutation({ mutationFn: (body) => api.post('/evaluate', body).then((r) => r.data) })
+
 // --- Agents ---
 export const useAgents = () =>
   useQuery({ queryKey: ['agents'], queryFn: get('/agents') })
