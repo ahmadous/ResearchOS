@@ -4,7 +4,6 @@ import { motion } from 'framer-motion'
 import {
   Alert, Box, Button, Card, CardContent, Link, Stack, TextField, Typography,
 } from '@mui/material'
-import Logo from '../components/Logo'
 import { useAuth } from '../store/AuthContext'
 import { errMsg } from '../api/client'
 
@@ -38,14 +37,11 @@ export default function Login() {
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
         <Card variant="outlined" sx={{ width: 400, maxWidth: '92vw' }}>
           <CardContent sx={{ p: 4 }}>
-            <Stack alignItems="center" gap={1} mb={3}>
-              <Logo size={56} />
-              <Typography variant="h5" fontWeight={800} sx={{ letterSpacing: '-0.02em' }}>
-                Research<Box component="span" sx={{
-                  background: 'linear-gradient(90deg,#4f46e5,#7c3aed)',
-                  WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                }}>OS</Box>
-              </Typography>
+            <Stack alignItems="center" gap={1.5} mb={3}>
+              <Box sx={{ bgcolor: '#fff', borderRadius: 3, px: 3, py: 2, lineHeight: 0,
+                         boxShadow: '0 1px 8px rgba(0,0,0,0.15)' }}>
+                <img src="/Logo-trim.png" alt="ResearchOS" style={{ width: 200, display: 'block' }} />
+              </Box>
               <Typography variant="body2" color="text.secondary">
                 {mode === 'login' ? 'Connectez-vous à votre espace' : 'Créez votre compte'}
               </Typography>
