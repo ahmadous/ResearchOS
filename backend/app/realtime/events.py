@@ -45,13 +45,14 @@ def _on_disconnect():
     log.debug("client déconnecté")
 
 
-def _stream_worker(app, sid, user_id, messages, strategy, pinned_model):
+def _stream_worker(app, sid, user_id, messages, strategy, pinned_model, use_memory):
     """Diffuse les tokens d'une complétion vers un client (thread de fond)."""
     with app.app_context():
         from ..services import LLMService
         try:
             chosen, tokens = LLMService().stream(
-                user_id, messages, strategy=strategy, pinned_model=pinned_model)
+                user_id, messages, strategy=strategy, pinned_model=pinned_model,
+                use_memory=use_memory)
             socketio.emit("chat_start", {"model": chosen.id, "provider": chosen.provider},
                           to=sid)
             for tok in tokens:
@@ -72,7 +73,7 @@ def _on_chat_stream(data):
     socketio.start_background_task(
         _stream_worker, app, request.sid, user_id,
         data.get("messages", []), data.get("strategy", "balanced"),
-        data.get("pinned_model"))
+        data.get("pinned_model"), data.get("use_memory", True))
 
 
 def _agent_stream_worker(app, sid, user_id, agent, task, pinned_model):

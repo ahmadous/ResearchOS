@@ -4,8 +4,8 @@ from sqlalchemy import func
 
 from ..extensions import db
 from ..models import (
-    Chunk, Document, GraphEntity, GraphRelation, ModelUsage, ProviderCredential,
-    Task, User, Workflow,
+    Chunk, Document, GraphEntity, GraphRelation, MemoryItem, ModelUsage,
+    ProviderCredential, Task, User, Workflow,
 )
 from ..models.graph_entity import normalize
 from .base import BaseRepository
@@ -153,6 +153,19 @@ class GraphRepository:
         db.session.commit()
 
 
+class MemoryRepository(BaseRepository[MemoryItem]):
+    model = MemoryItem
+
+    def for_user(self, user_id: str, *, scope: str | None = None,
+                 project: str | None = None) -> list[MemoryItem]:
+        filters = {"user_id": user_id}
+        if scope:
+            filters["scope"] = scope
+        if project:
+            filters["project"] = project
+        return sorted(self.list(**filters), key=lambda m: m.created_at, reverse=True)
+
+
 __all__ = ["UserRepository", "ProviderRepository", "UsageRepository",
            "DocumentRepository", "ChunkRepository", "TaskRepository",
-           "WorkflowRepository", "GraphRepository"]
+           "WorkflowRepository", "GraphRepository", "MemoryRepository"]

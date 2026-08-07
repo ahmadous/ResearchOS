@@ -6,7 +6,8 @@ import {
 } from '@mui/material'
 import {
   AutoAwesome, Dashboard as DashIcon, Hub, DarkMode, LightMode,
-  Logout, MenuBook, Memory, Science, Chat as ChatIcon, AccountTree, BubbleChart,
+  Logout, MenuBook, Memory as MemoryIcon, Science, Chat as ChatIcon,
+  AccountTree, BubbleChart, Psychology,
 } from '@mui/icons-material'
 import { useAuth } from '../store/AuthContext'
 import { useRealtime } from '../store/RealtimeProvider'
@@ -15,12 +16,13 @@ import { useColorMode } from '../main'
 const WIDTH = 248
 const NAV = [
   { to: '/', label: 'Dashboard', icon: <DashIcon /> },
-  { to: '/llm', label: 'LLM Manager', icon: <Memory /> },
+  { to: '/llm', label: 'LLM Manager', icon: <MemoryIcon /> },
   { to: '/chat', label: 'Chat', icon: <ChatIcon /> },
   { to: '/agents', label: 'Agents', icon: <Hub /> },
   { to: '/workflows', label: 'Workflow Builder', icon: <AccountTree /> },
   { to: '/documents', label: 'Documents (RAG)', icon: <MenuBook /> },
   { to: '/graph', label: 'Knowledge Graph', icon: <BubbleChart /> },
+  { to: '/memory', label: 'Mémoire', icon: <Psychology /> },
   { to: '/scholar', label: 'Recherche sci.', icon: <Science /> },
 ]
 

@@ -212,10 +212,26 @@ class LLMService:
                       "latency_ms": round(resp.latency_ms, 1)},
         }
 
+    def _prepare_messages(self, user_id: str, messages: list[dict],
+                          use_memory: bool) -> list[dict]:
+        """Ajoute le prompt système et, si demandé, la mémoire pertinente."""
+        msgs = _with_system(messages)
+        if use_memory:
+            try:
+                from .memory_service import MemoryService
+                last = next((m["content"] for m in reversed(messages)
+                             if m.get("role") == "user"), "")
+                mem = MemoryService().recall_context(user_id, last)
+                if mem:
+                    msgs = [msgs[0], {"role": "system", "content": mem}, *msgs[1:]]
+            except Exception:            # la mémoire ne doit jamais casser le chat
+                pass
+        return msgs
+
     # --- Chat en streaming (tokens au fil de l'eau) ---
     def stream(self, user_id: str, messages: list[dict], *,
                strategy: str = "balanced", pinned_model: str | None = None,
-               require_privacy: str | None = None):
+               require_privacy: str | None = None, use_memory: bool = True):
         """Génère les tokens progressivement. Renvoie d'abord le modèle choisi."""
         router = self.router_for(user_id, record_usage=False)
         if not router.registry.specs():
@@ -228,7 +244,7 @@ class LLMService:
         chosen = router.choose(ctx, strategy)
         req = CompletionRequest(
             messages=[Message(role=m["role"], content=m["content"])
-                      for m in _with_system(messages)],
+                      for m in self._prepare_messages(user_id, messages, use_memory)],
             max_tokens=CHAT_MAX_TOKENS)
         return chosen, router.stream(req, ctx=ctx, strategy=strategy)
 

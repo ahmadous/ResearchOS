@@ -48,6 +48,30 @@ export const useTestModel = () =>
 export const useChat = () =>
   useMutation({ mutationFn: (body) => api.post('/chat/complete', body).then((r) => r.data) })
 
+// --- Memory Engine ---
+export const useMemories = (scope) =>
+  useQuery({ queryKey: ['memories', scope || 'all'],
+             queryFn: get(`/memory${scope ? `?scope=${scope}` : ''}`) })
+
+export const useAddMemory = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body) => api.post('/memory', body).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['memories'] }),
+  })
+}
+
+export const useDeleteMemory = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id) => api.delete(`/memory/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['memories'] }),
+  })
+}
+
+export const useRecallMemory = () =>
+  useMutation({ mutationFn: (body) => api.post('/memory/recall', body).then((r) => r.data) })
+
 // --- Évaluation (fact-check) ---
 export const useEvaluate = () =>
   useMutation({ mutationFn: (body) => api.post('/evaluate', body).then((r) => r.data) })
