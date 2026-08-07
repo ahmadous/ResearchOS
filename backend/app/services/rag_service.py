@@ -129,5 +129,7 @@ class RAGService:
             raise LLMServiceError(
                 "Aucun modèle disponible pour générer la réponse. Configurez un "
                 "fournisseur ou démarrez Ollama.")
+        from ..language import language_directive
         return self._engine(user_id).answer(
-            question, records, strategy=strategy, require_privacy=require_privacy)
+            question, records, strategy=strategy, require_privacy=require_privacy,
+            system_extra=language_directive(question))

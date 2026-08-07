@@ -74,8 +74,12 @@ class AgentService:
             from .knowledge_service import KnowledgeGraphService
             return KnowledgeGraphService().extract_and_merge(user_id, text=text)
 
+        def lang_directive(text):
+            from ..language import language_directive
+            return language_directive(text)
+
         return {"scholar_search": scholar_search, "rag_context": rag_context,
-                "kg_extract": kg_extract}
+                "kg_extract": kg_extract, "lang_directive": lang_directive}
 
     def _orchestrator(self, user_id: str) -> Orchestrator:
         registry = AgentRegistry(RouterLLMClient(user_id, self.llm_service))
@@ -115,6 +119,7 @@ class AgentService:
             raise LLMServiceError(f"Agent inconnu: {agent}")
         ag = orch.registry.get(agent)
         ctx = orch._new_context(goal=task)
+        ctx.data["lang_directive"] = ctx.use_tool("lang_directive", task) or ""  # langue
         task = ag.preprocess(task, ctx)             # déclenche les vrais outils (scholar/RAG/KG)
         messages = ag.build_messages(task, ctx)     # system + contexte + tâche
         router = self.llm_service.router_for(user_id, record_usage=False)

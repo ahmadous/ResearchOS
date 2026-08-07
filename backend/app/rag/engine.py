@@ -64,14 +64,15 @@ class RAGEngine:
         return "\n\n".join(blocks), refs
 
     def answer(self, question: str, records: list[dict], *,
-               strategy: str = "balanced", require_privacy: str | None = None) -> dict:
+               strategy: str = "balanced", require_privacy: str | None = None,
+               system_extra: str = "") -> dict:
         hits = self.retrieve(question, records)
         if not hits:
             return {"answer": "Aucun document indexé ne permet de répondre.",
                     "references": [], "used_chunks": 0}
         context, refs = self._build_context(hits)
         messages = [
-            Message("system", _SYSTEM),
+            Message("system", _SYSTEM + system_extra),   # ex: consigne de langue
             Message("user", f"Contexte :\n{context}\n\nQuestion : {question}"),
         ]
         resp = self.llm.complete(messages, strategy=strategy,
