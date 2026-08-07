@@ -3,10 +3,10 @@ import {
   Box, Button, Card, CardContent, Chip, IconButton, MenuItem, Paper, Stack,
   TextField, Typography, ToggleButton, ToggleButtonGroup,
 } from '@mui/material'
-import { Send, Bolt, FactCheck } from '@mui/icons-material'
+import { Send, Bolt, FactCheck, Psychology, BookmarkAdd } from '@mui/icons-material'
 import Page from '../components/Page'
 import { TOKEN_KEY, errMsg } from '../api/client'
-import { useModels, useEvaluate } from '../hooks/useApi'
+import { useModels, useEvaluate, useAddMemory } from '../hooks/useApi'
 import { useRealtime } from '../store/RealtimeProvider'
 
 const VERDICT = {
@@ -21,10 +21,12 @@ export default function Chat() {
   const { socket } = useRealtime()
   const { data: modelsData } = useModels()
   const evaluate = useEvaluate()
+  const addMemory = useAddMemory()
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [strategy, setStrategy] = useState('balanced')
   const [pinned, setPinned] = useState('')     // '' = routage auto
+  const [useMemory, setUseMemory] = useState(true)
   const [streaming, setStreaming] = useState(false)
   const endRef = useRef(null)
   const t0 = useRef(0)
@@ -89,7 +91,13 @@ export default function Chat() {
       messages: history.map((m) => ({ role: m.role, content: m.content })),
       strategy,
       pinned_model: pinned || undefined,
+      use_memory: useMemory,
     })
+  }
+
+  const memorize = (index) => {
+    const content = messages[index]?.content
+    if (content) addMemory.mutate({ content, kind: 'note' })
   }
 
   return (
@@ -98,6 +106,11 @@ export default function Chat() {
       subtitle="Réponse en streaming, routée automatiquement (ou modèle imposé)"
       action={
         <Stack direction="row" gap={1} alignItems="center">
+          <ToggleButton size="small" value="mem" selected={useMemory}
+            onChange={() => setUseMemory((v) => !v)}
+            title={useMemory ? 'Mémoire active' : 'Mémoire désactivée'}>
+            <Psychology fontSize="small" />
+          </ToggleButton>
           <TextField select size="small" value={pinned} onChange={(e) => setPinned(e.target.value)}
             sx={{ minWidth: 150 }}
             SelectProps={{ displayEmpty: true }}>
@@ -153,6 +166,10 @@ export default function Chat() {
                       {m.eval && (
                         <Chip size="small" color={VERDICT[m.eval.verdict].color}
                           label={`${VERDICT[m.eval.verdict].label} · ${m.eval.confidence}%`} />
+                      )}
+                      {m.ms != null && !m.error && (
+                        <Button size="small" startIcon={<BookmarkAdd />} onClick={() => memorize(i)}
+                          sx={{ minWidth: 0, py: 0 }}>Mémoriser</Button>
                       )}
                     </Stack>
                     {m.evalError && <Typography variant="caption" color="error.main">{m.evalError}</Typography>}

@@ -74,6 +74,22 @@ class EvaluateSchema(Schema):
     pinned_model = fields.Str(load_default=None, allow_none=True)
 
 
+class MemoryCreateSchema(Schema):
+    content = fields.Str(required=True, validate=validate.Length(min=1))
+    scope = fields.Str(load_default="user",
+                       validate=validate.OneOf(["user", "project", "agent", "global"]))
+    project = fields.Str(load_default=None, allow_none=True)
+    agent = fields.Str(load_default=None, allow_none=True)
+    kind = fields.Str(load_default="fact")
+
+
+class MemoryRecallSchema(Schema):
+    query = fields.Str(required=True, validate=validate.Length(min=1))
+    k = fields.Int(load_default=5, validate=validate.Range(min=1, max=20))
+    scope = fields.Str(load_default=None, allow_none=True)
+    project = fields.Str(load_default=None, allow_none=True)
+
+
 class ScholarSearchSchema(Schema):
     query = fields.Str(required=True, validate=validate.Length(min=2))
     sources = fields.List(fields.Str(), load_default=None, allow_none=True)
