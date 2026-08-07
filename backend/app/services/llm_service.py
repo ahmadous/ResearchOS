@@ -27,21 +27,51 @@ class LLMServiceError(Exception):
     status_code = 400
 
 
-# Consigne système du chat : force la langue de l'utilisateur + forte concision
-# (sur CPU, chaque token coûte du temps -> répondre court = répondre vite).
+# Consigne système du chat : DÉTECTION AUTOMATIQUE de la langue.
 CHAT_SYSTEM = (
-    "Tu es l'assistant de ResearchOS. Réponds TOUJOURS dans la même langue que "
-    "l'utilisateur (français par défaut). Réponds en 2 à 3 phrases maximum, de "
-    "façon directe, sauf si l'utilisateur demande explicitement plus de détails."
+    "Tu es l'assistant de ResearchOS. Détecte automatiquement la langue du DERNIER "
+    "message de l'utilisateur et réponds EXACTEMENT dans cette même langue : "
+    "anglais→anglais, français→français, espagnol→espagnol, italien→italien, "
+    "wolof→wolof, et si l'utilisateur mélange les langues (ex. wolof et français), "
+    "réponds dans le même mélange. Ne traduis jamais et ne changes pas de langue de "
+    "toi-même. Sois clair et concis, sauf si on te demande plus de détails."
 )
 # Longueur max par défaut d'une réponse de chat (borne le temps de génération).
-CHAT_MAX_TOKENS = 256
+CHAT_MAX_TOKENS = 384
+
+
+# Détection déterministe de la langue -> consigne explicite (robuste même sur un
+# petit modèle qui n'obéirait pas à « détecte la langue toi-même »).
+_LANG_NAMES = {"en": "anglais", "fr": "français", "es": "espagnol", "it": "italien",
+               "pt": "portugais", "de": "allemand", "ar": "arabe", "nl": "néerlandais"}
+
+
+def _detect_language(text: str) -> str | None:
+    text = (text or "").strip()
+    if len(text) < 8:            # trop court pour une détection fiable
+        return None
+    try:
+        from langdetect import DetectorFactory, detect_langs
+        DetectorFactory.seed = 0
+        top = detect_langs(text)[0]
+        if top.prob >= 0.80 and top.lang in _LANG_NAMES:
+            return _LANG_NAMES[top.lang]
+    except Exception:
+        pass
+    return None                  # langue inconnue (ex: wolof) -> consigne générale
 
 
 def _with_system(messages: list[dict]) -> list[dict]:
     if any(m.get("role") == "system" for m in messages):
         return messages
-    return [{"role": "system", "content": CHAT_SYSTEM}, *messages]
+    system = CHAT_SYSTEM
+    last_user = next((m["content"] for m in reversed(messages)
+                      if m.get("role") == "user"), "")
+    lang = _detect_language(last_user)
+    if lang:
+        system += (f" IMPORTANT : le message est en {lang}. Réponds "
+                   f"OBLIGATOIREMENT en {lang}.")
+    return [{"role": "system", "content": system}, *messages]
 
 
 class LLMService:

@@ -109,7 +109,7 @@ export default function Documents() {
               <Divider>ou coller du texte</Divider>
               <Stack gap={1.5} mt={2}>
                 <TextField label="Titre" size="small" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-                <TextField label="Contenu" multiline minRows={3} value={form.text}
+                <TextField label="Contenu" multiline minRows={3} maxRows={16} value={form.text}
                   onChange={(e) => setForm({ ...form, text: e.target.value })} />
                 <Button variant="outlined" onClick={doIngest} disabled={ingest.isPending || !form.text}>
                   Indexer le texte
@@ -143,11 +143,12 @@ export default function Documents() {
           <Card>
             <CardContent>
               <Typography variant="h6" mb={2}>Interroger (réponse sourcée)</Typography>
-              <Stack direction="row" gap={1} mb={2}>
+              <Stack direction="row" gap={1} mb={2} alignItems="flex-end">
                 <TextField fullWidth size="small" placeholder="Votre question…" value={question}
+                  multiline maxRows={6}
                   onChange={(e) => setQuestion(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && ask()} />
-                <IconButton color="primary" onClick={ask} disabled={ragQuery.isPending}><Send /></IconButton>
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask() } }} />
+                <IconButton color="primary" onClick={ask} disabled={ragQuery.isPending} sx={{ mb: 0.25 }}><Send /></IconButton>
               </Stack>
 
               {answer?.loading && <Typography color="text.secondary">Recherche…</Typography>}

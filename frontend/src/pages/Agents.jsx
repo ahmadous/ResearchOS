@@ -79,7 +79,7 @@ export default function Agents() {
                 {selected ? `Agent : ${selected.name}` : 'Sélectionnez un agent'}
               </Typography>
               <Stack gap={2}>
-                <TextField label="Tâche" multiline minRows={3} value={task}
+                <TextField label="Tâche" multiline minRows={2} maxRows={14} value={task}
                   onChange={(e) => setTask(e.target.value)} disabled={!selected}
                   placeholder="Décrivez la tâche à confier à l'agent…" />
                 <Stack direction="row" gap={1}>

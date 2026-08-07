@@ -251,12 +251,14 @@ export default function Chat() {
             <div ref={endRef} />
           </Stack>
         </CardContent>
-        <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
-          <Stack direction="row" gap={1}>
-            <TextField fullWidth size="small" placeholder="Votre message…" value={input}
+        <Box sx={{ p: { xs: 1, sm: 2 }, borderTop: 1, borderColor: 'divider' }}>
+          <Stack direction="row" gap={1} alignItems="flex-end">
+            <TextField fullWidth size="small" placeholder="Votre message…  (Entrée pour envoyer · Maj+Entrée pour un retour à la ligne)"
+              value={input} multiline maxRows={8}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), send())} />
-            <IconButton color="primary" onClick={send} disabled={streaming || !socket}><Send /></IconButton>
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }} />
+            <IconButton color="primary" onClick={send} disabled={streaming || !socket}
+              sx={{ mb: 0.25 }}><Send /></IconButton>
           </Stack>
         </Box>
       </Card>
