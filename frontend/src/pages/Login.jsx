@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import {
   Alert, Box, Button, Card, CardContent, Link, Stack, TextField, Typography,
 } from '@mui/material'
-import { AutoAwesome } from '@mui/icons-material'
+import Logo from '../components/Logo'
 import { useAuth } from '../store/AuthContext'
 import { errMsg } from '../api/client'
 
@@ -39,8 +39,13 @@ export default function Login() {
         <Card variant="outlined" sx={{ width: 400, maxWidth: '92vw' }}>
           <CardContent sx={{ p: 4 }}>
             <Stack alignItems="center" gap={1} mb={3}>
-              <AutoAwesome color="primary" sx={{ fontSize: 34 }} />
-              <Typography variant="h5">ResearchOS</Typography>
+              <Logo size={56} />
+              <Typography variant="h5" fontWeight={800} sx={{ letterSpacing: '-0.02em' }}>
+                Research<Box component="span" sx={{
+                  background: 'linear-gradient(90deg,#4f46e5,#7c3aed)',
+                  WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                }}>OS</Box>
+              </Typography>
               <Typography variant="body2" color="text.secondary">
                 {mode === 'login' ? 'Connectez-vous à votre espace' : 'Créez votre compte'}
               </Typography>
