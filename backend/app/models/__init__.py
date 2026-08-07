@@ -1,4 +1,5 @@
 """Import de tous les modèles pour que SQLAlchemy enregistre les tables."""
+from .conversation import ChatMessage, Conversation
 from .document import Chunk, Document
 from .graph_entity import GraphEntity, GraphRelation
 from .memory import MemoryItem
@@ -11,4 +12,4 @@ from .workflow import Workflow
 
 __all__ = ["User", "ProviderCredential", "ModelUsage", "Document", "Chunk",
            "Task", "Workflow", "GraphEntity", "GraphRelation", "MemoryItem",
-           "Report"]
+           "Report", "Conversation", "ChatMessage"]

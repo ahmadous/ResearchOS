@@ -4,8 +4,8 @@ from sqlalchemy import func
 
 from ..extensions import db
 from ..models import (
-    Chunk, Document, GraphEntity, GraphRelation, MemoryItem, ModelUsage,
-    ProviderCredential, Report, Task, User, Workflow,
+    ChatMessage, Chunk, Conversation, Document, GraphEntity, GraphRelation,
+    MemoryItem, ModelUsage, ProviderCredential, Report, Task, User, Workflow,
 )
 from ..models.graph_entity import normalize
 from .base import BaseRepository
@@ -174,7 +174,15 @@ class ReportRepository(BaseRepository[Report]):
                       key=lambda r: r.created_at, reverse=True)
 
 
+class ConversationRepository(BaseRepository[Conversation]):
+    model = Conversation
+
+    def for_user(self, user_id: str) -> list[Conversation]:
+        return sorted(self.list(user_id=user_id),
+                      key=lambda c: c.updated_at, reverse=True)
+
+
 __all__ = ["UserRepository", "ProviderRepository", "UsageRepository",
            "DocumentRepository", "ChunkRepository", "TaskRepository",
            "WorkflowRepository", "GraphRepository", "MemoryRepository",
-           "ReportRepository"]
+           "ReportRepository", "ConversationRepository"]

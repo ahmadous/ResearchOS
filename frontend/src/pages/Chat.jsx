@@ -3,11 +3,14 @@ import {
   Box, Button, Card, CardContent, Chip, IconButton, MenuItem, Paper, Stack,
   TextField, Typography, ToggleButton, ToggleButtonGroup,
 } from '@mui/material'
-import { Send, Bolt, FactCheck, Psychology, BookmarkAdd } from '@mui/icons-material'
+import { Send, Bolt, FactCheck, Psychology, BookmarkAdd, Add, DeleteOutline } from '@mui/icons-material'
 import Page from '../components/Page'
 import { TOKEN_KEY, errMsg } from '../api/client'
-import { useModels, useEvaluate, useAddMemory } from '../hooks/useApi'
+import {
+  useModels, useEvaluate, useAddMemory, useConversations, conversationApi,
+} from '../hooks/useApi'
 import { useRealtime } from '../store/RealtimeProvider'
+import { useQueryClient } from '@tanstack/react-query'
 
 const VERDICT = {
   reliable: { color: 'success', label: 'Fiable' },
@@ -20,18 +23,26 @@ const STRATEGIES = ['balanced', 'cost', 'speed', 'quality', 'privacy']
 export default function Chat() {
   const { socket } = useRealtime()
   const { data: modelsData } = useModels()
+  const { data: convData } = useConversations()
   const evaluate = useEvaluate()
   const addMemory = useAddMemory()
+  const qc = useQueryClient()
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [strategy, setStrategy] = useState('balanced')
   const [pinned, setPinned] = useState('')     // '' = routage auto
   const [useMemory, setUseMemory] = useState(true)
   const [streaming, setStreaming] = useState(false)
+  const [convId, setConvId] = useState('')
   const endRef = useRef(null)
   const t0 = useRef(0)
+  const convRef = useRef(null)        // conversation courante (persistée)
+  const assistantRef = useRef('')     // texte assistant accumulé (pour sauvegarde)
+  const modelRef = useRef(null)
 
   const models = modelsData?.models || []
+  const conversations = convData?.conversations || []
+  const refreshConvs = () => qc.invalidateQueries({ queryKey: ['conversations'] })
 
   // Abonnement aux événements de streaming.
   useEffect(() => {
@@ -43,11 +54,17 @@ export default function Chat() {
         if (last && last.role === 'assistant') copy[copy.length - 1] = fn(last)
         return copy
       })
-    const onStart = (e) => patchLast((l) => ({ ...l, model: e.model, provider: e.provider }))
-    const onToken = (e) => patchLast((l) => ({ ...l, content: l.content + e.text }))
+    const onStart = (e) => { modelRef.current = e.model; patchLast((l) => ({ ...l, model: e.model, provider: e.provider })) }
+    const onToken = (e) => { assistantRef.current += e.text; patchLast((l) => ({ ...l, content: l.content + e.text })) }
     const onDone = () => {
       patchLast((l) => ({ ...l, ms: Math.round(performance.now() - t0.current) }))
       setStreaming(false)
+      // Sauvegarde la réponse de l'assistant dans la conversation.
+      if (convRef.current && assistantRef.current) {
+        conversationApi.append(convRef.current, {
+          role: 'assistant', content: assistantRef.current, model: modelRef.current,
+        }).then(refreshConvs).catch(() => {})
+      }
     }
     const onErr = (e) => { patchLast((l) => ({ ...l, content: `⚠️ ${e.message}`, error: true })); setStreaming(false) }
     socket.on('chat_start', onStart)
@@ -78,14 +95,27 @@ export default function Chat() {
     }
   }
 
-  const send = () => {
-    if (!input.trim() || streaming) return
-    if (!socket) return
-    const history = [...messages, { role: 'user', content: input }]
+  const send = async () => {
+    if (!input.trim() || streaming || !socket) return
+    const text = input
+    const history = [...messages, { role: 'user', content: text }]
     setMessages([...history, { role: 'assistant', content: '' }])   // placeholder streamé
     setInput('')
     setStreaming(true)
     t0.current = performance.now()
+    assistantRef.current = ''
+    modelRef.current = pinned || null
+
+    // Persistance : crée la conversation au 1er message, enregistre le message user.
+    try {
+      let cid = convRef.current
+      if (!cid) {
+        const c = await conversationApi.create(text.slice(0, 60))
+        cid = c.id; convRef.current = cid; setConvId(cid)
+      }
+      conversationApi.append(cid, { role: 'user', content: text }).then(refreshConvs).catch(() => {})
+    } catch { /* la persistance ne doit pas bloquer le chat */ }
+
     socket.emit('chat_stream', {
       token: localStorage.getItem(TOKEN_KEY),
       messages: history.map((m) => ({ role: m.role, content: m.content })),
@@ -93,6 +123,18 @@ export default function Chat() {
       pinned_model: pinned || undefined,
       use_memory: useMemory,
     })
+  }
+
+  const loadConversation = async (id) => {
+    if (!id) { convRef.current = null; setConvId(''); setMessages([]); return }
+    const c = await conversationApi.get(id)
+    convRef.current = id; setConvId(id)
+    setMessages((c.messages || []).map((m) => ({ role: m.role, content: m.content, model: m.model })))
+  }
+  const deleteConversation = async () => {
+    if (!convId) return
+    await conversationApi.remove(convId)
+    convRef.current = null; setConvId(''); setMessages([]); refreshConvs()
   }
 
   const memorize = (index) => {
@@ -105,7 +147,17 @@ export default function Chat() {
       title="Chat"
       subtitle="Réponse en streaming, routée automatiquement (ou modèle imposé)"
       action={
-        <Stack direction="row" gap={1} alignItems="center">
+        <Stack direction="row" gap={1} alignItems="center" flexWrap="wrap">
+          <TextField select size="small" value={convId}
+            onChange={(e) => loadConversation(e.target.value)} sx={{ minWidth: 150 }}
+            SelectProps={{ displayEmpty: true }}>
+            <MenuItem value=""><em>Nouvelle conversation</em></MenuItem>
+            {conversations.map((c) => (
+              <MenuItem key={c.id} value={c.id}>{c.title}</MenuItem>
+            ))}
+          </TextField>
+          <IconButton size="small" onClick={() => loadConversation('')} title="Nouvelle conversation"><Add fontSize="small" /></IconButton>
+          {convId && <IconButton size="small" onClick={deleteConversation} title="Supprimer"><DeleteOutline fontSize="small" /></IconButton>}
           <ToggleButton size="small" value="mem" selected={useMemory}
             onChange={() => setUseMemory((v) => !v)}
             title={useMemory ? 'Mémoire active' : 'Mémoire désactivée'}>
