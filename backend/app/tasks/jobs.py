@@ -44,6 +44,14 @@ def _graph_extract_work(progress, user_id, params):
     return out
 
 
+def _report_work(progress, user_id, params):
+    from ..services import ReportService
+    return ReportService().generate(
+        user_id, params["query"], sources=params.get("sources"),
+        limit=params.get("limit", 8), pinned_model=params.get("pinned_model"),
+        progress=progress)
+
+
 def _workflow_work(progress, user_id, params):
     from ..services import WorkflowService
     progress(5, "planification du graphe…")
@@ -58,6 +66,7 @@ WORK = {
     "scholar_import": _scholar_import_work,
     "workflow": _workflow_work,
     "graph_extract": _graph_extract_work,
+    "report": _report_work,
 }
 
 

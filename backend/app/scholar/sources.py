@@ -1,7 +1,7 @@
 """Sources académiques concrètes (APIs ouvertes, sans clé).
 
 Chaque `parse()` est pur et testé avec des payloads réels. Le réseau est confiné
-dans `_fetch()`.
+dans `_fetch()` (via `_get`, qui suit les redirections et envoie un User-Agent poli).
 """
 from __future__ import annotations
 
@@ -12,17 +12,22 @@ import httpx
 from .base import Paper, PaperSource
 
 _TIMEOUT = 15
+_HEADERS = {"User-Agent": "ResearchOS/1.0 (mailto:research@researchos.dev)"}
+
+
+def _get(url: str, params: dict):
+    # follow_redirects : arXiv redirige http -> https.
+    return httpx.get(url, params=params, timeout=_TIMEOUT,
+                     follow_redirects=True, headers=_HEADERS)
 
 
 class ArxivSource(PaperSource):
     name = "arxiv"
-    default_base_url = "http://export.arxiv.org/api/query"
+    default_base_url = "https://export.arxiv.org/api/query"
     _NS = {"a": "http://www.w3.org/2005/Atom", "arxiv": "http://arxiv.org/schemas/atom"}
 
     def _fetch(self, query, limit):
-        r = httpx.get(self.base_url, params={
-            "search_query": f"all:{query}", "max_results": limit,
-        }, timeout=_TIMEOUT)
+        r = _get(self.base_url, {"search_query": f"all:{query}", "max_results": limit})
         r.raise_for_status()
         return r.text
 
@@ -49,8 +54,7 @@ class OpenAlexSource(PaperSource):
     default_base_url = "https://api.openalex.org/works"
 
     def _fetch(self, query, limit):
-        r = httpx.get(self.base_url, params={"search": query, "per_page": limit},
-                      timeout=_TIMEOUT)
+        r = _get(self.base_url, {"search": query, "per_page": limit})
         r.raise_for_status()
         return r.json()
 
@@ -85,8 +89,7 @@ class SemanticScholarSource(PaperSource):
     _FIELDS = "title,abstract,year,authors,externalIds,url,venue,citationCount"
 
     def _fetch(self, query, limit):
-        r = httpx.get(self.base_url, params={
-            "query": query, "limit": limit, "fields": self._FIELDS}, timeout=_TIMEOUT)
+        r = _get(self.base_url, {"query": query, "limit": limit, "fields": self._FIELDS})
         r.raise_for_status()
         return r.json()
 
@@ -108,8 +111,7 @@ class CrossRefSource(PaperSource):
     default_base_url = "https://api.crossref.org/works"
 
     def _fetch(self, query, limit):
-        r = httpx.get(self.base_url, params={"query": query, "rows": limit},
-                      timeout=_TIMEOUT)
+        r = _get(self.base_url, {"query": query, "rows": limit})
         r.raise_for_status()
         return r.json()
 
@@ -134,10 +136,9 @@ class HALSource(PaperSource):
     default_base_url = "https://api.archives-ouvertes.fr/search/"
 
     def _fetch(self, query, limit):
-        r = httpx.get(self.base_url, params={
+        r = _get(self.base_url, {
             "q": query, "wt": "json", "rows": limit,
-            "fl": "title_s,authFullName_s,abstract_s,doiId_s,uri_s,producedDateY_i",
-        }, timeout=_TIMEOUT)
+            "fl": "title_s,authFullName_s,abstract_s,doiId_s,uri_s,producedDateY_i"})
         r.raise_for_status()
         return r.json()
 

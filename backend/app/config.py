@@ -54,6 +54,11 @@ class BaseConfig:
     # Durée de maintien du modèle en mémoire (évite le rechargement). Ex: "30m", "-1" (toujours).
     OLLAMA_KEEP_ALIVE = os.getenv("OLLAMA_KEEP_ALIVE", "30m")
 
+    # --- Rapports (PDF générés) ---
+    REPORTS_DIR = os.getenv("REPORTS_DIR",
+                            os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                                         "generated_reports"))
+
     # --- RAG / Embeddings ---
     # "hashing" (déterministe, hors-ligne, défaut) ou "ollama" (nomic-embed-text).
     EMBEDDING_BACKEND = os.getenv("EMBEDDING_BACKEND", "hashing")

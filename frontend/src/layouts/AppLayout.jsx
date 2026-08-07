@@ -7,7 +7,7 @@ import {
 import {
   AutoAwesome, Dashboard as DashIcon, Hub, DarkMode, LightMode,
   Logout, MenuBook, Memory as MemoryIcon, Science, Chat as ChatIcon,
-  AccountTree, BubbleChart, Psychology,
+  AccountTree, BubbleChart, Psychology, Description,
 } from '@mui/icons-material'
 import { useAuth } from '../store/AuthContext'
 import { useRealtime } from '../store/RealtimeProvider'
@@ -24,6 +24,7 @@ const NAV = [
   { to: '/graph', label: 'Knowledge Graph', icon: <BubbleChart /> },
   { to: '/memory', label: 'Mémoire', icon: <Psychology /> },
   { to: '/scholar', label: 'Recherche sci.', icon: <Science /> },
+  { to: '/reports', label: 'Rapports', icon: <Description /> },
 ]
 
 export default function AppLayout() {
