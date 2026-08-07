@@ -6,6 +6,7 @@ from ..extensions import db
 from ..models import (
     ChatMessage, Chunk, Conversation, Document, GraphEntity, GraphRelation,
     MemoryItem, ModelUsage, ProviderCredential, Report, Task, User, Workflow,
+    WorkflowRun,
 )
 from ..models.graph_entity import normalize
 from .base import BaseRepository
@@ -104,6 +105,14 @@ class WorkflowRepository(BaseRepository[Workflow]):
                       key=lambda w: w.updated_at, reverse=True)
 
 
+class WorkflowRunRepository(BaseRepository[WorkflowRun]):
+    model = WorkflowRun
+
+    def for_user(self, user_id: str) -> list[WorkflowRun]:
+        return sorted(self.list(user_id=user_id),
+                      key=lambda r: r.updated_at, reverse=True)
+
+
 class GraphRepository:
     """Accès au knowledge graph, avec upsert (fusion) des entités/relations."""
 
@@ -184,5 +193,5 @@ class ConversationRepository(BaseRepository[Conversation]):
 
 __all__ = ["UserRepository", "ProviderRepository", "UsageRepository",
            "DocumentRepository", "ChunkRepository", "TaskRepository",
-           "WorkflowRepository", "GraphRepository", "MemoryRepository",
-           "ReportRepository", "ConversationRepository"]
+           "WorkflowRepository", "WorkflowRunRepository", "GraphRepository",
+           "MemoryRepository", "ReportRepository", "ConversationRepository"]

@@ -43,6 +43,7 @@ backend/app/
 - [x] **Bonus** — Import de fichiers (PDF, Word, Excel, Markdown -> RAG ; images/vidéos en pièces jointes)
 - [x] **Bonus** — Conversations de chat persistantes (sauvegarde et relecture entre sessions)
 - [x] **Bonus** — Agents outillés (research->recherche web réelle, pdf->RAG, graph->Knowledge Graph) : collaboration réelle
+- [x] **Bonus** — Gestion des workflows (exécuter / pause / reprendre / arrêter, reprise reprenable, historique des runs)
 - [x] **Phase 7** — Frontend React (Vite + MUI) : Login, Dashboard, LLM Manager, Chat, Agents, Documents (RAG), Recherche sci., temps réel
 
 ## Démarrage (dev)

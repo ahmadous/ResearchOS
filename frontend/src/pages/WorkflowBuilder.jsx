@@ -5,9 +5,10 @@ import {
 } from '@mui/material'
 import {
   Add, DeleteOutline, PlayArrow, Save, Link as LinkIcon, Close, Hub,
+  Pause, Replay, Stop,
 } from '@mui/icons-material'
 import Page from '../components/Page'
-import { errMsg } from '../api/client'
+import { api, errMsg } from '../api/client'
 import { useAgents, useWorkflows, useSaveWorkflow, useRunWorkflow } from '../hooks/useApi'
 import { useRealtime } from '../store/RealtimeProvider'
 
@@ -26,18 +27,29 @@ export default function WorkflowBuilder() {
   const [edges, setEdges] = useState([])
   const [linkFrom, setLinkFrom] = useState(null)
   const [status, setStatus] = useState({})      // node_id -> running|done|failed
+  const [runId, setRunId] = useState(null)
+  const [runStatus, setRunStatus] = useState(null) // running|paused|completed|failed|canceled
   const [error, setError] = useState('')
   const canvasRef = useRef(null)
   const drag = useRef(null)
+  const taskRef = useRef(null)
 
-  // Écoute la progression par nœud pendant l'exécution.
+  // Écoute la progression par nœud + le statut de l'exécution.
   useEffect(() => {
     if (!socket) return
     const onNode = (e) => setStatus((s) => ({ ...s, [e.node_id]: e.status }))
-    const onDone = () => setError('')
+    const onDone = (e) => {
+      if (e.task_id !== taskRef.current) return
+      setRunStatus(e.result?.status || 'completed')
+    }
+    const onFail = (e) => { if (e.task_id === taskRef.current) setRunStatus('failed') }
     socket.on('workflow_node', onNode)
     socket.on('task_completed', onDone)
-    return () => { socket.off('workflow_node', onNode); socket.off('task_completed', onDone) }
+    socket.on('task_failed', onFail)
+    return () => {
+      socket.off('workflow_node', onNode); socket.off('task_completed', onDone)
+      socket.off('task_failed', onFail)
+    }
   }, [socket])
 
   // --- Manipulation du graphe ---
@@ -94,14 +106,27 @@ export default function WorkflowBuilder() {
   }
   const doRun = async () => {
     if (!wf.id) { setError('Enregistrez d\'abord le workflow.'); return }
-    setStatus({})
-    try { await run.mutateAsync(wf.id) } catch (e) { setError(errMsg(e)) }
+    setStatus({}); setError('')
+    try {
+      const { run: r, task } = await run.mutateAsync(wf.id)
+      setRunId(r.id); setRunStatus('running'); taskRef.current = task.id
+    } catch (e) { setError(errMsg(e)) }
+  }
+  const pauseRun = async () => {
+    await api.post(`/workflows/runs/${runId}/pause`); setRunStatus('paused')
+  }
+  const cancelRun = async () => {
+    await api.post(`/workflows/runs/${runId}/cancel`); setRunStatus('canceled')
+  }
+  const resumeRun = async () => {
+    const { data } = await api.post(`/workflows/runs/${runId}/resume`)
+    setRunStatus('running'); taskRef.current = data.task.id
   }
   const load = (w) => {
     setWf({ id: w.id, name: w.name })
     setNodes(w.graph.nodes || [])
     setEdges(w.graph.edges || [])
-    setStatus({})
+    setStatus({}); setRunId(null); setRunStatus(null)
   }
 
   const nodeById = (id) => nodes.find((n) => n.id === id)
@@ -117,9 +142,22 @@ export default function WorkflowBuilder() {
           <Button variant="outlined" startIcon={<Save />} onClick={doSave} disabled={save.isPending}>
             Enregistrer
           </Button>
-          <Button variant="contained" startIcon={<PlayArrow />} onClick={doRun} disabled={!nodes.length}>
-            Exécuter
-          </Button>
+          {runStatus === 'running' ? (
+            <>
+              <Button variant="outlined" color="warning" startIcon={<Pause />} onClick={pauseRun}>Pause</Button>
+              <Button variant="outlined" color="error" startIcon={<Stop />} onClick={cancelRun}>Arrêter</Button>
+            </>
+          ) : runStatus === 'paused' ? (
+            <>
+              <Button variant="contained" color="warning" startIcon={<PlayArrow />} onClick={resumeRun}>Reprendre</Button>
+              <Button variant="outlined" color="error" startIcon={<Stop />} onClick={cancelRun}>Arrêter</Button>
+            </>
+          ) : (
+            <Button variant="contained" startIcon={runStatus ? <Replay /> : <PlayArrow />}
+              onClick={doRun} disabled={!nodes.length}>
+              {runStatus ? 'Relancer' : 'Exécuter'}
+            </Button>
+          )}
         </Stack>
       }
     >
@@ -135,6 +173,13 @@ export default function WorkflowBuilder() {
           2) écrivez sa tâche dans le nœud · 3) reliez les nœuds avec l'icône 🔗 (l'ordre
           d'exécution suit les flèches) · 4) <b>Enregistrer</b> puis <b>Exécuter</b>. La
           progression s'affiche en direct (nœud orange = en cours, vert = terminé).
+        </Alert>
+      )}
+      {runStatus && (
+        <Alert
+          severity={{ running: 'info', paused: 'warning', completed: 'success', failed: 'error', canceled: 'warning' }[runStatus] || 'info'}
+          sx={{ mb: 2 }} onClose={runStatus === 'running' ? undefined : () => setRunStatus(null)}>
+          Exécution : <b>{{ running: 'en cours…', paused: 'en pause', completed: 'terminée ✓', failed: 'échouée', canceled: 'arrêtée' }[runStatus]}</b>
         </Alert>
       )}
 
