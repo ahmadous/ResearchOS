@@ -5,10 +5,11 @@ import {
   ListItemText, Stack, Toolbar, Tooltip, Typography,
 } from '@mui/material'
 import {
-  AutoAwesome, Dashboard as DashIcon, Hub, DarkMode, LightMode,
+  Dashboard as DashIcon, Hub, DarkMode, LightMode,
   Logout, MenuBook, Memory as MemoryIcon, Science, Chat as ChatIcon,
   AccountTree, BubbleChart, Psychology, Description, MailOutline,
 } from '@mui/icons-material'
+import { Wordmark } from '../components/Logo'
 import { useAuth } from '../store/AuthContext'
 import { useRealtime } from '../store/RealtimeProvider'
 import { useColorMode } from '../main'
@@ -37,12 +38,9 @@ export default function AppLayout() {
 
   const drawer = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <Stack direction="row" alignItems="center" gap={1.2} sx={{ px: 2.5, py: 2.5 }}>
-        <AutoAwesome color="primary" />
-        <Typography variant="h6" fontWeight={700}>
-          ResearchOS
-        </Typography>
-      </Stack>
+      <Box sx={{ px: 2.5, py: 2.5, color: 'text.primary' }}>
+        <Wordmark size={30} />
+      </Box>
       <List sx={{ px: 1.5, flex: 1 }}>
         {NAV.map((n) => {
           const active = pathname === n.to
