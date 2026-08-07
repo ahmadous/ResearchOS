@@ -47,3 +47,4 @@ reportlab>=4.0
 
 # --- Utils ---
 tenacity>=8.2
+langdetect>=1.0        # détection automatique de la langue du chat

@@ -7,7 +7,7 @@ import {
 import {
   Dashboard as DashIcon, Hub, DarkMode, LightMode,
   Logout, MenuBook, Memory as MemoryIcon, Science, Chat as ChatIcon,
-  AccountTree, BubbleChart, Psychology, Description, MailOutline,
+  AccountTree, BubbleChart, Psychology, Description, MailOutline, Menu as MenuIcon,
 } from '@mui/icons-material'
 import { Wordmark } from '../components/Logo'
 import { useAuth } from '../store/AuthContext'
@@ -80,7 +80,12 @@ export default function AppLayout() {
           backdropFilter: 'blur(8px)', borderBottom: 1, borderColor: 'divider',
         }}
       >
-        <Toolbar sx={{ justifyContent: 'flex-end', gap: 1 }}>
+        <Toolbar sx={{ gap: 1 }}>
+          <IconButton onClick={() => setMobileOpen(true)} edge="start"
+            sx={{ display: { md: 'none' } }} aria-label="Ouvrir le menu">
+            <MenuIcon />
+          </IconButton>
+          <Box sx={{ flexGrow: 1 }} />
           <Tooltip title={connected ? 'Temps réel connecté' : 'Temps réel hors ligne'}>
             <Box sx={{
               width: 9, height: 9, borderRadius: '50%', mr: 0.5,
@@ -105,6 +110,20 @@ export default function AppLayout() {
       </AppBar>
 
       <Box component="nav" sx={{ width: { md: WIDTH }, flexShrink: { md: 0 } }}>
+        {/* Tiroir mobile (temporaire) */}
+        <Drawer
+          variant="temporary"
+          open={mobileOpen}
+          onClose={() => setMobileOpen(false)}
+          ModalProps={{ keepMounted: true }}
+          sx={{
+            display: { xs: 'block', md: 'none' },
+            '& .MuiDrawer-paper': { width: WIDTH },
+          }}
+        >
+          {drawer}
+        </Drawer>
+        {/* Sidebar permanente (desktop) */}
         <Drawer
           variant="permanent"
           open
