@@ -1,19 +1,26 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-  Box, Card, CardContent, Chip, IconButton, MenuItem, Paper, Stack,
+  Box, Button, Card, CardContent, Chip, IconButton, MenuItem, Paper, Stack,
   TextField, Typography, ToggleButton, ToggleButtonGroup,
 } from '@mui/material'
-import { Send, Bolt } from '@mui/icons-material'
+import { Send, Bolt, FactCheck } from '@mui/icons-material'
 import Page from '../components/Page'
-import { TOKEN_KEY } from '../api/client'
-import { useModels } from '../hooks/useApi'
+import { TOKEN_KEY, errMsg } from '../api/client'
+import { useModels, useEvaluate } from '../hooks/useApi'
 import { useRealtime } from '../store/RealtimeProvider'
+
+const VERDICT = {
+  reliable: { color: 'success', label: 'Fiable' },
+  uncertain: { color: 'warning', label: 'Incertain' },
+  unreliable: { color: 'error', label: 'Peu fiable' },
+}
 
 const STRATEGIES = ['balanced', 'cost', 'speed', 'quality', 'privacy']
 
 export default function Chat() {
   const { socket } = useRealtime()
   const { data: modelsData } = useModels()
+  const evaluate = useEvaluate()
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [strategy, setStrategy] = useState('balanced')
@@ -52,6 +59,22 @@ export default function Chat() {
   }, [socket])
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
+
+  const patchAt = (index, patch) =>
+    setMessages((m) => m.map((x, i) => (i === index ? { ...x, ...patch } : x)))
+
+  // Vérifie la fiabilité d'une réponse (question = message user précédent).
+  const doEvaluate = async (index) => {
+    const answer = messages[index]?.content
+    const question = messages.slice(0, index).reverse().find((m) => m.role === 'user')?.content || ''
+    patchAt(index, { evaluating: true, evalError: null })
+    try {
+      const res = await evaluate.mutateAsync({ question, answer, pinned_model: pinned || undefined })
+      patchAt(index, { evaluating: false, eval: res })
+    } catch (e) {
+      patchAt(index, { evaluating: false, evalError: errMsg(e) })
+    }
+  }
 
   const send = () => {
     if (!input.trim() || streaming) return
@@ -117,9 +140,41 @@ export default function Chat() {
                   </Typography>
                 </Paper>
                 {m.role === 'assistant' && m.model && (
-                  <Stack direction="row" gap={0.5} mt={0.5}>
-                    <Chip size="small" variant="outlined" label={m.model} />
-                    {m.ms != null && <Chip size="small" variant="outlined" label={`${m.ms} ms`} />}
+                  <Stack gap={0.5} mt={0.5} maxWidth="80%">
+                    <Stack direction="row" gap={0.5} alignItems="center" flexWrap="wrap">
+                      <Chip size="small" variant="outlined" label={m.model} />
+                      {m.ms != null && <Chip size="small" variant="outlined" label={`${m.ms} ms`} />}
+                      {m.ms != null && !m.error && !m.eval && (
+                        <Button size="small" startIcon={<FactCheck />} onClick={() => doEvaluate(i)}
+                          disabled={m.evaluating} sx={{ minWidth: 0, py: 0 }}>
+                          {m.evaluating ? 'Vérification…' : 'Vérifier'}
+                        </Button>
+                      )}
+                      {m.eval && (
+                        <Chip size="small" color={VERDICT[m.eval.verdict].color}
+                          label={`${VERDICT[m.eval.verdict].label} · ${m.eval.confidence}%`} />
+                      )}
+                    </Stack>
+                    {m.evalError && <Typography variant="caption" color="error.main">{m.evalError}</Typography>}
+                    {m.eval && (m.eval.issues.length > 0 || m.eval.correction) && (
+                      <Paper variant="outlined" sx={{ p: 1, mt: 0.5 }}>
+                        {m.eval.issues.length > 0 && (
+                          <Box>
+                            <Typography variant="caption" fontWeight={600}>Points à vérifier :</Typography>
+                            <ul style={{ margin: '2px 0 0', paddingLeft: 18 }}>
+                              {m.eval.issues.map((it, k) => (
+                                <li key={k}><Typography variant="caption">{it}</Typography></li>
+                              ))}
+                            </ul>
+                          </Box>
+                        )}
+                        {m.eval.correction && (
+                          <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+                            💡 {m.eval.correction}
+                          </Typography>
+                        )}
+                      </Paper>
+                    )}
                   </Stack>
                 )}
               </Stack>

@@ -67,6 +67,13 @@ class GraphExtractSchema(Schema):
     document_id = fields.Str(load_default=None, allow_none=True)
 
 
+class EvaluateSchema(Schema):
+    question = fields.Str(required=True, validate=validate.Length(min=1))
+    answer = fields.Str(required=True, validate=validate.Length(min=1))
+    context = fields.Str(load_default="")
+    pinned_model = fields.Str(load_default=None, allow_none=True)
+
+
 class ScholarSearchSchema(Schema):
     query = fields.Str(required=True, validate=validate.Length(min=2))
     sources = fields.List(fields.Str(), load_default=None, allow_none=True)
