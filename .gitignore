@@ -18,3 +18,4 @@ dist/
 
 # PDF de rapports générés
 backend/generated_reports/
+backend/uploads/

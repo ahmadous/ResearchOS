@@ -40,6 +40,8 @@ backend/app/
 - [x] **Bonus** — Évaluation auto des réponses (fact-check, score de confiance, corrections)
 - [x] **Bonus** — Memory Engine (mémoire persistante scopée, rappel sémantique, injection auto dans le chat)
 - [x] **Bonus** — Revue de littérature (recherche réelle EN PARALLÈLE -> tableau comparatif interactif -> BibTeX/PDF ; synthèse IA optionnelle)
+- [x] **Bonus** — Import de fichiers (PDF, Word, Excel, Markdown -> RAG ; images/vidéos en pièces jointes)
+- [x] **Bonus** — Conversations de chat persistantes (sauvegarde et relecture entre sessions)
 - [x] **Phase 7** — Frontend React (Vite + MUI) : Login, Dashboard, LLM Manager, Chat, Agents, Documents (RAG), Recherche sci., temps réel
 
 ## Démarrage (dev)

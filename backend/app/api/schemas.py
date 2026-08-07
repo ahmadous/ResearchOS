@@ -160,6 +160,16 @@ class AgentAutoSchema(Schema):
     max_steps = fields.Int(load_default=5, validate=validate.Range(min=1, max=10))
 
 
+class ConversationCreateSchema(Schema):
+    title = fields.Str(load_default=None, allow_none=True)
+
+
+class MessageAppendSchema(Schema):
+    role = fields.Str(required=True, validate=validate.OneOf(["user", "assistant"]))
+    content = fields.Str(required=True, validate=validate.Length(min=1))
+    model = fields.Str(load_default=None, allow_none=True)
+
+
 class ChatSchema(Schema):
     messages = fields.List(fields.Nested(MessageSchema), required=True,
                            validate=validate.Length(min=1))

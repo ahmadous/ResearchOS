@@ -59,6 +59,12 @@ class BaseConfig:
                             os.path.join(os.path.dirname(os.path.dirname(__file__)),
                                          "generated_reports"))
 
+    # --- Fichiers importés (images/vidéos/pièces jointes) ---
+    UPLOADS_DIR = os.getenv("UPLOADS_DIR",
+                            os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                                         "uploads"))
+    MAX_CONTENT_LENGTH = int(os.getenv("MAX_UPLOAD_MB", "50")) * 1024 * 1024
+
     # --- RAG / Embeddings ---
     # "hashing" (déterministe, hors-ligne, défaut) ou "ollama" (nomic-embed-text).
     EMBEDDING_BACKEND = os.getenv("EMBEDDING_BACKEND", "hashing")

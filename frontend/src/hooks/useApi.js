@@ -72,6 +72,17 @@ export const useDeleteMemory = () => {
 export const useRecallMemory = () =>
   useMutation({ mutationFn: (body) => api.post('/memory/recall', body).then((r) => r.data) })
 
+// --- Conversations (persistance du chat) ---
+export const useConversations = () =>
+  useQuery({ queryKey: ['conversations'], queryFn: get('/conversations') })
+
+export const conversationApi = {
+  create: (title) => api.post('/conversations', { title }).then((r) => r.data),
+  get: (id) => api.get(`/conversations/${id}`).then((r) => r.data),
+  append: (id, msg) => api.post(`/conversations/${id}/messages`, msg).then((r) => r.data),
+  remove: (id) => api.delete(`/conversations/${id}`),
+}
+
 // --- Évaluation (fact-check) ---
 export const useEvaluate = () =>
   useMutation({ mutationFn: (body) => api.post('/evaluate', body).then((r) => r.data) })
@@ -97,6 +108,18 @@ export const useIngest = () => {
 }
 export const useRagQuery = () =>
   useMutation({ mutationFn: (body) => api.post('/rag/query', body).then((r) => r.data) })
+
+export const useUploadFile = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (file) => {
+      const fd = new FormData()
+      fd.append('file', file)
+      return api.post('/rag/upload', fd).then((r) => r.data)
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['documents'] }),
+  })
+}
 
 // --- Knowledge Graph ---
 export const useGraph = () =>

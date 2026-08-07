@@ -5,6 +5,7 @@ from ..extensions import api
 from .agents import blp as agents_blp
 from .auth import blp as auth_blp
 from .chat import blp as chat_blp
+from .conversations import blp as conversations_blp
 from .evaluate import blp as evaluate_blp
 from .graph import blp as graph_blp
 from .llm import blp as llm_blp
@@ -29,3 +30,4 @@ def register_blueprints() -> None:
     api.register_blueprint(evaluate_blp)
     api.register_blueprint(memory_blp)
     api.register_blueprint(reports_blp)
+    api.register_blueprint(conversations_blp)

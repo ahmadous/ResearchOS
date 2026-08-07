@@ -35,5 +35,15 @@ httpx>=0.27
 # tiktoken>=0.7
 # numpy>=1.26
 
+# --- Import de fichiers (extraction de texte) ---
+PyMuPDF>=1.24          # PDF (import fitz)
+python-docx>=1.1       # Word (.docx)
+openpyxl>=3.1          # Excel (.xlsx)
+Pillow>=10.0           # images
+# python-pptx>=0.6     # PowerPoint (optionnel)
+
+# --- Rapports PDF ---
+reportlab>=4.0
+
 # --- Utils ---
 tenacity>=8.2
