@@ -72,6 +72,32 @@ export const useDeleteMemory = () => {
 export const useRecallMemory = () =>
   useMutation({ mutationFn: (body) => api.post('/memory/recall', body).then((r) => r.data) })
 
+// --- Mail (IMAP lecture seule + tri IA) ---
+export const useMailAccount = () =>
+  useQuery({ queryKey: ['mail-account'], queryFn: get('/mail/account') })
+
+export const useConnectMail = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body) => api.post('/mail/account', body).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['mail-account'] }),
+  })
+}
+
+export const useDeleteMail = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => api.delete('/mail/account'),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['mail-account'] }),
+  })
+}
+
+export const useInbox = (enabled) =>
+  useQuery({ queryKey: ['inbox'], queryFn: get('/mail/inbox'), enabled, retry: 0 })
+
+export const useTriage = () =>
+  useMutation({ mutationFn: (body) => api.post('/mail/triage', body).then((r) => r.data) })
+
 // --- Conversations (persistance du chat) ---
 export const useConversations = () =>
   useQuery({ queryKey: ['conversations'], queryFn: get('/conversations') })

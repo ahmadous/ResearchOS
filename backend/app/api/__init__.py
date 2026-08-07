@@ -9,6 +9,7 @@ from .conversations import blp as conversations_blp
 from .evaluate import blp as evaluate_blp
 from .graph import blp as graph_blp
 from .llm import blp as llm_blp
+from .mail import blp as mail_blp
 from .memory import blp as memory_blp
 from .reports import blp as reports_blp
 from .rag import blp as rag_blp
@@ -31,3 +32,4 @@ def register_blueprints() -> None:
     api.register_blueprint(memory_blp)
     api.register_blueprint(reports_blp)
     api.register_blueprint(conversations_blp)
+    api.register_blueprint(mail_blp)

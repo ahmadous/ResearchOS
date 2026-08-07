@@ -4,6 +4,7 @@ from .conversation_service import ConversationService
 from .evaluation_service import EvaluationService
 from .knowledge_service import KnowledgeGraphService
 from .llm_service import LLMService, LLMServiceError
+from .mail_service import MailService
 from .memory_service import MemoryService
 from .rag_service import RAGService
 from .report_service import ReportService
@@ -14,4 +15,4 @@ from .workflow_service import WorkflowService
 __all__ = ["AuthService", "AuthError", "LLMService", "LLMServiceError",
            "AgentService", "RAGService", "ScholarService", "TaskService",
            "WorkflowService", "KnowledgeGraphService", "EvaluationService",
-           "MemoryService", "ReportService", "ConversationService"]
+           "MemoryService", "ReportService", "ConversationService", "MailService"]

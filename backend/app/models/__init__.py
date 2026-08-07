@@ -2,6 +2,7 @@
 from .conversation import ChatMessage, Conversation
 from .document import Chunk, Document
 from .graph_entity import GraphEntity, GraphRelation
+from .mail_account import MailAccount
 from .memory import MemoryItem
 from .provider import ProviderCredential
 from .report import Report
@@ -13,4 +14,4 @@ from .workflow_run import WorkflowRun
 
 __all__ = ["User", "ProviderCredential", "ModelUsage", "Document", "Chunk",
            "Task", "Workflow", "GraphEntity", "GraphRelation", "MemoryItem",
-           "Report", "Conversation", "ChatMessage", "WorkflowRun"]
+           "Report", "Conversation", "ChatMessage", "WorkflowRun", "MailAccount"]
