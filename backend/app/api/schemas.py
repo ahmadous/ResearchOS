@@ -164,6 +164,17 @@ class AgentAutoSchema(Schema):
     max_steps = fields.Int(load_default=5, validate=validate.Range(min=1, max=10))
 
 
+class MailConnectSchema(Schema):
+    email = fields.Email(required=True)
+    password = fields.Str(required=True, load_only=True)   # mot de passe d'application
+    imap_host = fields.Str(load_default="imap.gmail.com")
+
+
+class MailTriageSchema(Schema):
+    emails = fields.List(fields.Dict(), required=True)
+    pinned_model = fields.Str(load_default=None, allow_none=True)
+
+
 class ConversationCreateSchema(Schema):
     title = fields.Str(load_default=None, allow_none=True)
 
