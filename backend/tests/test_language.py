@@ -39,9 +39,43 @@ def test_with_system_respects_existing_system():
     print("[inject]   système existant respecté (pas de double)")
 
 
+def test_rag_answer_receives_language_directive():
+    from app.agents.base import AgentLLMResponse
+    from app.rag import HashingEmbedder, RAGEngine
+
+    class FakeLLM:
+        def __init__(self): self.sys = None
+        def complete(self, messages, **kw):
+            self.sys = messages[0].content
+            return AgentLLMResponse(content="ok", model="f", provider="f")
+
+    emb, llm = HashingEmbedder(), FakeLLM()
+    recs = [{"id": "c1", "text": "attention transformers",
+             "embedding": emb.embed("attention transformers"),
+             "document_id": "d", "ordinal": 0, "title": "D"}]
+    RAGEngine(emb, llm).answer("q", recs, system_extra=" Réponds OBLIGATOIREMENT en anglais.")
+    assert "OBLIGATOIREMENT en anglais" in llm.sys
+    print("[rag]      consigne de langue transmise au moteur RAG")
+
+
+def test_agent_prompt_includes_language_directive():
+    from app.agents.base import AgentContext, BaseAgent
+
+    class A(BaseAgent):
+        name = "a"
+        system_prompt = "Prompt de base."
+
+    ctx = AgentContext(goal="x", data={"lang_directive": " Réponds en anglais."})
+    msgs = A(llm=None).build_messages("faire la tâche", ctx)
+    assert "Prompt de base." in msgs[0].content and "Réponds en anglais" in msgs[0].content
+    print("[agent]    directive de langue injectée dans le prompt de l'agent")
+
+
 if __name__ == "__main__":
     for t in [test_detects_common_languages, test_short_or_unknown_returns_none,
               test_with_system_injects_language_instruction,
-              test_with_system_respects_existing_system]:
+              test_with_system_respects_existing_system,
+              test_rag_answer_receives_language_directive,
+              test_agent_prompt_includes_language_directive]:
         t()
-    print("\n✅ 4 tests langue passés.")
+    print("\n✅ 6 tests langue passés.")

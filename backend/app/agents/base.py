@@ -103,7 +103,9 @@ class BaseAgent:
 
     # --- squelette figé ---
     def build_messages(self, task: str, context: AgentContext) -> list[Message]:
-        msgs = [Message("system", self.system_prompt)]
+        # Consigne de langue (injectée par la couche service via ctx.data).
+        system = self.system_prompt + context.data.get("lang_directive", "")
+        msgs = [Message("system", system)]
         if context.blackboard:
             shared = "\n\n".join(f"### {a}\n{txt[:1500]}"
                                  for a, txt in context.blackboard.items())
@@ -112,6 +114,9 @@ class BaseAgent:
         return msgs
 
     def run(self, task: str, context: AgentContext) -> AgentResult:
+        # Détecte la langue sur la tâche ORIGINALE (avant préprocessing/outils).
+        if "lang_directive" not in context.data:
+            context.data["lang_directive"] = context.use_tool("lang_directive", task) or ""
         task = self.preprocess(task, context)
         messages = self.build_messages(task, context)
         resp = self.llm.complete(
