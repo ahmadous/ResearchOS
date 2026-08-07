@@ -15,3 +15,6 @@ dist/
 .DS_Store
 .idea/
 .vscode/
+
+# PDF de rapports générés
+backend/generated_reports/

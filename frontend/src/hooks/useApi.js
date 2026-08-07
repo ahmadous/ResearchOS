@@ -130,6 +130,26 @@ export const useSaveWorkflow = () => {
 export const useRunWorkflow = () =>
   useMutation({ mutationFn: (id) => api.post(`/workflows/${id}/run`).then((r) => r.data) })
 
+// --- Rapports ---
+export const useReports = () =>
+  useQuery({ queryKey: ['reports'], queryFn: get('/reports') })
+
+export const useGenerateReport = () =>
+  useMutation({ mutationFn: (body) => api.post('/reports', body).then((r) => r.data) })
+
+// Télécharge le PDF avec le header JWT puis déclenche l'enregistrement.
+export const downloadReportPdf = async (id) => {
+  const res = await api.get(`/reports/${id}/pdf`, { responseType: 'blob' })
+  const url = URL.createObjectURL(res.data)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `rapport-${id.slice(0, 8)}.pdf`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
+
 // --- Scholar ---
 export const useScholarSearch = () =>
   useMutation({ mutationFn: (body) => api.post('/scholar/search', body).then((r) => r.data) })

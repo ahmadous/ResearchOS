@@ -5,7 +5,7 @@ from sqlalchemy import func
 from ..extensions import db
 from ..models import (
     Chunk, Document, GraphEntity, GraphRelation, MemoryItem, ModelUsage,
-    ProviderCredential, Task, User, Workflow,
+    ProviderCredential, Report, Task, User, Workflow,
 )
 from ..models.graph_entity import normalize
 from .base import BaseRepository
@@ -166,6 +166,15 @@ class MemoryRepository(BaseRepository[MemoryItem]):
         return sorted(self.list(**filters), key=lambda m: m.created_at, reverse=True)
 
 
+class ReportRepository(BaseRepository[Report]):
+    model = Report
+
+    def for_user(self, user_id: str) -> list[Report]:
+        return sorted(self.list(user_id=user_id),
+                      key=lambda r: r.created_at, reverse=True)
+
+
 __all__ = ["UserRepository", "ProviderRepository", "UsageRepository",
            "DocumentRepository", "ChunkRepository", "TaskRepository",
-           "WorkflowRepository", "GraphRepository", "MemoryRepository"]
+           "WorkflowRepository", "GraphRepository", "MemoryRepository",
+           "ReportRepository"]

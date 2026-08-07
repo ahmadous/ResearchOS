@@ -90,6 +90,13 @@ class MemoryRecallSchema(Schema):
     project = fields.Str(load_default=None, allow_none=True)
 
 
+class ReportCreateSchema(Schema):
+    query = fields.Str(required=True, validate=validate.Length(min=3))
+    sources = fields.List(fields.Str(), load_default=None, allow_none=True)
+    limit = fields.Int(load_default=8, validate=validate.Range(min=2, max=20))
+    pinned_model = fields.Str(load_default=None, allow_none=True)
+
+
 class ScholarSearchSchema(Schema):
     query = fields.Str(required=True, validate=validate.Length(min=2))
     sources = fields.List(fields.Str(), load_default=None, allow_none=True)

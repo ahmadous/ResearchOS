@@ -24,13 +24,14 @@ class RouterLLMClient:
         self.usage = usage or UsageRepository()
 
     def complete(self, messages, *, strategy="balanced", require_privacy=None,
-                 pinned_model=None, agent=None) -> AgentLLMResponse:
+                 pinned_model=None, agent=None, max_tokens=None) -> AgentLLMResponse:
         ctx = RoutingContext(
             pinned_model=pinned_model,
             require_privacy=Privacy(require_privacy) if require_privacy else None,
         )
         req = CompletionRequest(
-            messages=[Message(role=m.role, content=m.content) for m in messages])
+            messages=[Message(role=m.role, content=m.content) for m in messages],
+            max_tokens=max_tokens)
         resp = self.router.complete(req, ctx=ctx, strategy=strategy)
         # Télémétrie taguée avec l'agent appelant.
         self.usage.add(ModelUsage(
