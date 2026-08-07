@@ -16,7 +16,11 @@ class BaseConfig:
     JSON_SORT_KEYS = False
 
     # --- SQLAlchemy ---
-    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "sqlite:///researchos.db")
+    # Chemin ABSOLU et prévisible (sinon Flask le résout dans instance/, ce qui
+    # rend le fichier difficile à trouver/supprimer).
+    _BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    SQLALCHEMY_DATABASE_URI = os.getenv(
+        "DATABASE_URL", f"sqlite:///{os.path.join(_BACKEND_DIR, 'researchos.db')}")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # --- JWT ---
