@@ -124,10 +124,17 @@ export default function WorkflowBuilder() {
       }
     >
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
-      {linkFrom && (
+      {linkFrom ? (
         <Alert severity="info" sx={{ mb: 2 }}
           action={<IconButton size="small" onClick={() => setLinkFrom(null)}><Close fontSize="small" /></IconButton>}>
           Cliquez le nœud <b>cible</b> pour créer la liaison.
+        </Alert>
+      ) : nodes.length === 0 && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          <b>Comment ça marche :</b> 1) cliquez un agent dans la palette pour l'ajouter ·
+          2) écrivez sa tâche dans le nœud · 3) reliez les nœuds avec l'icône 🔗 (l'ordre
+          d'exécution suit les flèches) · 4) <b>Enregistrer</b> puis <b>Exécuter</b>. La
+          progression s'affiche en direct (nœud orange = en cours, vert = terminé).
         </Alert>
       )}
 

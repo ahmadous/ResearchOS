@@ -157,6 +157,9 @@ export const useRunWorkflow = () =>
 export const useReportSearch = () =>
   useMutation({ mutationFn: (body) => api.post('/reports/search', body).then((r) => r.data) })
 
+export const useReportSynthesize = () =>
+  useMutation({ mutationFn: (body) => api.post('/reports/synthesize', body).then((r) => r.data) })
+
 const saveBlob = (blob, filename) => {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')

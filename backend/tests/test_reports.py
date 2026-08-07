@@ -50,15 +50,15 @@ def _auth():
 def test_search_is_immediate_and_llm_free():
     c, h = _auth()
     def _boom(self, req):
-        raise AssertionError("le LLM ne doit PAS être appelé sans synthèse")
+        raise AssertionError("la RECHERCHE ne doit JAMAIS appeler le LLM")
     with patch.object(ScholarService, "search", return_value=FAKE), \
          patch.object(OllamaProvider, "complete", _boom):
         r = c.post("/api/reports/search", headers=h, json={"query": "flood mapping satellite"})
     body = r.get_json()
-    assert r.status_code == 200 and body["count"] == 2 and body["synthesis"] == ""
+    assert r.status_code == 200 and body["count"] == 2 and "synthesis" not in body
     assert body["results"][0]["abstract"] and body["results"][0]["citations"] == 42
     assert body["results"][0]["url"] and "@article" in body["bibtex"]
-    print(f"[search]   {body['count']} articles + BibTeX, SANS appel LLM")
+    print(f"[search]   {body['count']} articles + BibTeX, SANS appel LLM (jamais de 500)")
 
 
 def _fake_complete(self, req):
@@ -74,13 +74,13 @@ def fake_llm():
         yield
 
 
-def test_search_with_optional_synthesis():
+def test_synthesize_is_separate_endpoint():
     c, h = _auth()
-    with patch.object(ScholarService, "search", return_value=FAKE), fake_llm():
-        r = c.post("/api/reports/search", headers=h,
-                   json={"query": "flood mapping", "synthesize": True})
-    assert r.get_json()["synthesis"].startswith("- CNN")
-    print("[synth]    synthèse IA seulement si demandée")
+    with fake_llm():
+        r = c.post("/api/reports/synthesize", headers=h,
+                   json={"query": "flood mapping", "papers": FAKE["results"]})
+    assert r.status_code == 200 and r.get_json()["synthesis"].startswith("- CNN")
+    print("[synth]    synthèse via endpoint séparé (n'affecte pas la recherche)")
 
 
 def test_pdf_export_from_results():
@@ -94,7 +94,7 @@ def test_pdf_export_from_results():
 
 if __name__ == "__main__":
     for t in [test_bibtex_from_real_data, test_render_digest_pdf,
-              test_search_is_immediate_and_llm_free, test_search_with_optional_synthesis,
+              test_search_is_immediate_and_llm_free, test_synthesize_is_separate_endpoint,
               test_pdf_export_from_results]:
         t()
     print("\n✅ 5 tests revue de littérature passés.")
