@@ -34,7 +34,24 @@ class ReportService:
                 "url": p.get("url"), "source": p.get("source"),
                 "abstract": p.get("abstract", "")}
 
-    def _synthesize(self, user_id, query, papers, pinned_model) -> str:
+    def search(self, user_id: str, query: str, *, sources: list[str] | None = None,
+               limit: int = 10) -> dict:
+        """Recherche pure et rapide — NE dépend JAMAIS du LLM (pas de 500 possible)."""
+        if not query.strip():
+            raise LLMServiceError("Requête vide")
+        found = ScholarService().search(query, sources or _DEFAULT_SOURCES, limit)
+        papers = found["results"][:limit]
+        refs = [self._ref(p) for p in papers]
+        return {"query": query, "count": len(refs), "results": refs,
+                "errors": found.get("errors", {}), "bibtex": to_bibtex(papers)}
+
+    def synthesize(self, user_id: str, query: str, papers: list[dict],
+                   pinned_model: str | None = None) -> str:
+        """Synthèse IA OPTIONNELLE, appelée séparément (peut être lente sur CPU)."""
+        if not papers:
+            raise LLMServiceError("Aucun article à synthétiser")
+        if not self.llm_service.router_for(user_id, record_usage=False).registry.specs():
+            raise LLMServiceError("Aucun modèle disponible pour la synthèse")
         blocks = [f"[{i}] {p.get('title')} ({p.get('year') or 's.d.'}): "
                   f"{(p.get('abstract') or '')[:300]}" for i, p in enumerate(papers, 1)]
         resp = RouterLLMClient(user_id, self.llm_service).complete(
@@ -43,25 +60,6 @@ class ReportService:
             strategy="balanced", pinned_model=pinned_model, agent="research",
             max_tokens=350)
         return resp.content
-
-    def search(self, user_id: str, query: str, *, sources: list[str] | None = None,
-               limit: int = 10, synthesize: bool = False,
-               pinned_model: str | None = None) -> dict:
-        if not query.strip():
-            raise LLMServiceError("Requête vide")
-        found = ScholarService().search(query, sources or _DEFAULT_SOURCES, limit)
-        papers = found["results"][:limit]
-        refs = [self._ref(p) for p in papers]
-
-        synthesis = ""
-        if synthesize and papers:
-            if not self.llm_service.router_for(user_id, record_usage=False).registry.specs():
-                raise LLMServiceError("Aucun modèle disponible pour la synthèse")
-            synthesis = self._synthesize(user_id, query, papers, pinned_model)
-
-        return {"query": query, "count": len(refs), "results": refs,
-                "errors": found.get("errors", {}), "bibtex": to_bibtex(papers),
-                "synthesis": synthesis}
 
     def render_pdf(self, query: str, papers: list[dict], synthesis: str = "") -> bytes:
         return render_digest_pdf(query, papers, synthesis)

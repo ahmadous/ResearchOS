@@ -1,13 +1,15 @@
 import { useMemo, useState } from 'react'
 import {
-  Alert, Box, Button, Card, CardContent, Chip, Divider, FormControlLabel,
-  IconButton, Link, Stack, Switch, Table, TableBody, TableCell, TableHead,
+  Alert, Box, Button, Card, CardContent, Chip, Divider,
+  IconButton, Link, Stack, Table, TableBody, TableCell, TableHead,
   TableRow, TableSortLabel, TextField, Typography, CircularProgress,
 } from '@mui/material'
-import { Search, PictureAsPdf, MenuBook, OpenInNew, Science } from '@mui/icons-material'
+import { Search, PictureAsPdf, MenuBook, OpenInNew, Science, AutoAwesome } from '@mui/icons-material'
 import Page from '../components/Page'
 import { errMsg } from '../api/client'
-import { useReportSearch, exportReportPdf, exportBibtex } from '../hooks/useApi'
+import {
+  useReportSearch, useReportSynthesize, exportReportPdf, exportBibtex,
+} from '../hooks/useApi'
 
 const SORTS = {
   citations: (a, b) => (b.citations ?? -1) - (a.citations ?? -1),
@@ -17,17 +19,26 @@ const SORTS = {
 
 export default function Reports() {
   const search = useReportSearch()
+  const synth = useReportSynthesize()
   const [query, setQuery] = useState('')
-  const [synthesize, setSynthesize] = useState(false)
   const [data, setData] = useState(null)
+  const [synthesis, setSynthesis] = useState('')
   const [sortBy, setSortBy] = useState('citations')
   const [error, setError] = useState('')
 
   const run = async () => {
-    if (query.trim().length < 3) return
-    setError(''); setData(null)
+    if (query.trim().length < 2) return
+    setError(''); setData(null); setSynthesis('')
     try {
-      setData(await search.mutateAsync({ query, synthesize }))
+      setData(await search.mutateAsync({ query }))   // recherche pure, jamais de LLM
+    } catch (e) { setError(errMsg(e)) }
+  }
+
+  const doSynthesize = async () => {
+    setError('')
+    try {
+      const r = await synth.mutateAsync({ query: data.query, papers: data.results })
+      setSynthesis(r.synthesis)
     } catch (e) { setError(errMsg(e)) }
   }
 
@@ -45,18 +56,18 @@ export default function Reports() {
       <Card sx={{ mb: 2 }}>
         <CardContent>
           <Stack direction={{ xs: 'column', sm: 'row' }} gap={1} alignItems="center">
-            <TextField fullWidth size="small" placeholder="Sujet (ex : flood detection satellite imagery deep learning)"
+            <TextField fullWidth size="small" placeholder="Mots-clés (de préférence en anglais : ex « flood detection satellite deep learning »)"
               value={query} onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && run()} disabled={search.isPending}
               InputProps={{ startAdornment: <Search fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} /> }} />
-            <FormControlLabel sx={{ whiteSpace: 'nowrap' }}
-              control={<Switch size="small" checked={synthesize} onChange={(e) => setSynthesize(e.target.checked)} />}
-              label="Synthèse IA" />
             <Button variant="contained" startIcon={search.isPending ? <CircularProgress size={16} color="inherit" /> : <Search />}
-              onClick={run} disabled={search.isPending || query.trim().length < 3}>
+              onClick={run} disabled={search.isPending || query.trim().length < 2}>
               Rechercher
             </Button>
           </Stack>
+          <Typography variant="caption" color="text.secondary" mt={1} display="block">
+            Recherche par mots-clés dans arXiv, OpenAlex et CrossRef (pas de reformulation IA). La synthèse IA est optionnelle, après les résultats.
+          </Typography>
         </CardContent>
       </Card>
 
@@ -74,17 +85,27 @@ export default function Reports() {
           <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1} mb={1}>
             <Typography variant="h6">{data.count} articles · « {data.query} »</Typography>
             <Stack direction="row" gap={1}>
+              <Button size="small" variant="outlined"
+                startIcon={synth.isPending ? <CircularProgress size={14} /> : <AutoAwesome />}
+                onClick={doSynthesize} disabled={!data.count || synth.isPending}>
+                Synthèse IA
+              </Button>
               <Button size="small" variant="outlined" startIcon={<PictureAsPdf />}
-                onClick={() => exportReportPdf({ query: data.query, papers: data.results, synthesis: data.synthesis })}
+                onClick={() => exportReportPdf({ query: data.query, papers: data.results, synthesis })}
                 disabled={!data.count}>PDF</Button>
               <Button size="small" variant="outlined" startIcon={<MenuBook />}
                 onClick={() => exportBibtex(data.bibtex)} disabled={!data.count}>BibTeX</Button>
             </Stack>
           </Stack>
 
-          {data.synthesis && (
+          {synth.isPending && (
+            <Alert severity="info" icon={<CircularProgress size={16} />} sx={{ mb: 2 }}>
+              Génération de la synthèse en cours (peut prendre 1-2 min sur un modèle local)…
+            </Alert>
+          )}
+          {synthesis && (
             <Alert severity="info" icon={false} sx={{ mb: 2, whiteSpace: 'pre-wrap' }}>
-              <b>Synthèse IA</b>{'\n'}{data.synthesis}
+              <b>Synthèse IA</b>{'\n'}{synthesis}
             </Alert>
           )}
 

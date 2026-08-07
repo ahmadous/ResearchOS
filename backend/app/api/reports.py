@@ -15,7 +15,7 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 from flask_smorest import Blueprint, abort
 
 from ..services import LLMServiceError, ReportService
-from .schemas import ReportPdfSchema, ReportSearchSchema
+from .schemas import ReportPdfSchema, ReportSearchSchema, ReportSynthesizeSchema
 
 blp = Blueprint("reports", __name__, url_prefix="/api/reports",
                 description="Revue de littérature (recherche réelle, tableau, PDF, BibTeX)")
@@ -32,13 +32,26 @@ class Search(MethodView):
     def post(self, data):
         try:
             return ReportService().search(
-                _uid(), data["query"], sources=data.get("sources"),
-                limit=data["limit"], synthesize=data["synthesize"],
-                pinned_model=data.get("pinned_model"))
+                _uid(), data["query"], sources=data.get("sources"), limit=data["limit"])
         except LLMServiceError as e:
             abort(400, message=str(e))
         except Exception as e:  # réseau/API tierce
             abort(502, message=f"Échec de la recherche: {e}")
+
+
+@blp.route("/synthesize")
+class Synthesize(MethodView):
+    @jwt_required()
+    @blp.arguments(ReportSynthesizeSchema)
+    def post(self, data):
+        """Synthèse IA séparée (optionnelle) — n'affecte jamais la recherche."""
+        try:
+            return {"synthesis": ReportService().synthesize(
+                _uid(), data["query"], data["papers"], data.get("pinned_model"))}
+        except LLMServiceError as e:
+            abort(400, message=str(e))
+        except Exception as e:
+            abort(502, message=f"Échec de la synthèse: {e}")
 
 
 @blp.route("/pdf")
