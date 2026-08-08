@@ -119,6 +119,32 @@ class OpenRouterProvider(OpenAICompatibleProvider):
         ]
 
 
+class GroqProvider(OpenAICompatibleProvider):
+    """Groq — inférence cloud ULTRA-RAPIDE (LPU), compatible OpenAI, peu coûteuse.
+
+    Idéal pour des réponses quasi-instantanées et fiables (démos, multilingue),
+    là où les modèles locaux CPU sont lents. Clé sur https://console.groq.com.
+    """
+    name = "groq"
+    default_base_url = "https://api.groq.com/openai/v1"
+
+    def models(self) -> list[ModelSpec]:
+        return [
+            ModelSpec("llama-3.3-70b-versatile", "groq", "Llama 3.3 70B (Groq)",
+                      context_window=131_072, max_output=32_768,
+                      input_cost=0.59, output_cost=0.79,
+                      speed=0.97, quality=0.9, supports_tools=True),
+            ModelSpec("llama-3.1-8b-instant", "groq", "Llama 3.1 8B Instant (Groq)",
+                      context_window=131_072, max_output=8_192,
+                      input_cost=0.05, output_cost=0.08,
+                      speed=0.99, quality=0.76, supports_tools=True),
+            ModelSpec("gemma2-9b-it", "groq", "Gemma2 9B (Groq)",
+                      context_window=8_192, max_output=8_192,
+                      input_cost=0.20, output_cost=0.20,
+                      speed=0.98, quality=0.75, supports_tools=True),
+        ]
+
+
 class DeepSeekProvider(OpenAICompatibleProvider):
     name = "deepseek"
     default_base_url = "https://api.deepseek.com/v1"
