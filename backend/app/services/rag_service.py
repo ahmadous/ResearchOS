@@ -113,7 +113,8 @@ class RAGService:
 
     # --- Interrogation (réponse citée) ---
     def query(self, user_id: str, question: str, *, document_id: str | None = None,
-              strategy: str = "balanced", require_privacy: str | None = None) -> dict:
+              strategy: str = "balanced", require_privacy: str | None = None,
+              lang: str | None = None) -> dict:
         if document_id:
             doc = self.documents.get(document_id)
             if not doc or doc.user_id != user_id:
@@ -129,7 +130,7 @@ class RAGService:
             raise LLMServiceError(
                 "Aucun modèle disponible pour générer la réponse. Configurez un "
                 "fournisseur ou démarrez Ollama.")
-        from ..language import language_directive
+        from ..language import directive_for
         return self._engine(user_id).answer(
             question, records, strategy=strategy, require_privacy=require_privacy,
-            system_extra=language_directive(question))
+            system_extra=directive_for(lang, question))

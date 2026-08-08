@@ -10,6 +10,7 @@ import {
   useModels, useEvaluate, useAddMemory, useConversations, conversationApi,
 } from '../hooks/useApi'
 import { useRealtime } from '../store/RealtimeProvider'
+import { getLang } from '../store/lang'
 import { useQueryClient } from '@tanstack/react-query'
 
 const VERDICT = {
@@ -122,6 +123,7 @@ export default function Chat() {
       strategy,
       pinned_model: pinned || undefined,
       use_memory: useMemory,
+      lang: getLang(),
     })
   }
 

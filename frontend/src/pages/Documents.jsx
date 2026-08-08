@@ -11,6 +11,7 @@ import {
 import Page from '../components/Page'
 import { api, errMsg } from '../api/client'
 import { useDocuments, useIngest, useRagQuery, useUploadFile } from '../hooks/useApi'
+import { getLang } from '../store/lang'
 import { useQueryClient } from '@tanstack/react-query'
 
 const ICONS = {
@@ -64,7 +65,7 @@ export default function Documents() {
     if (!question.trim()) return
     setAnswer({ loading: true })
     try {
-      setAnswer(await ragQuery.mutateAsync({ question }))
+      setAnswer(await ragQuery.mutateAsync({ question, lang: getLang() }))
     } catch (e) { setAnswer({ error: errMsg(e) }) }
   }
 

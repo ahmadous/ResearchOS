@@ -2,14 +2,16 @@ import { useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import {
   AppBar, Avatar, Box, Drawer, IconButton, List, ListItemButton, ListItemIcon,
-  ListItemText, Stack, Toolbar, Tooltip, Typography,
+  ListItemText, Menu, MenuItem, Stack, Toolbar, Tooltip, Typography,
 } from '@mui/material'
 import {
   Dashboard as DashIcon, Hub, DarkMode, LightMode,
   Logout, MenuBook, Memory as MemoryIcon, Science, Chat as ChatIcon,
   AccountTree, BubbleChart, Psychology, Description, MailOutline, Menu as MenuIcon,
+  Translate, Check,
 } from '@mui/icons-material'
 import { Wordmark } from '../components/Logo'
+import { LANGS, getLang, setLang } from '../store/lang'
 import { useAuth } from '../store/AuthContext'
 import { useRealtime } from '../store/RealtimeProvider'
 import { useColorMode } from '../main'
@@ -35,6 +37,10 @@ export default function AppLayout() {
   const { connected } = useRealtime()
   const { mode, toggle } = useColorMode()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [lang, setLangState] = useState(getLang())
+  const [langAnchor, setLangAnchor] = useState(null)
+  const chooseLang = (code) => { setLang(code); setLangState(code); setLangAnchor(null) }
+  const langLabel = LANGS.find((l) => l.code === lang)?.label || 'Auto'
 
   const drawer = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -93,6 +99,17 @@ export default function AppLayout() {
               boxShadow: connected ? '0 0 8px' : 'none', color: 'success.main',
             }} />
           </Tooltip>
+          <Tooltip title={`Langue des réponses : ${langLabel}`}>
+            <IconButton onClick={(e) => setLangAnchor(e.currentTarget)}><Translate /></IconButton>
+          </Tooltip>
+          <Menu anchorEl={langAnchor} open={!!langAnchor} onClose={() => setLangAnchor(null)}>
+            {LANGS.map((l) => (
+              <MenuItem key={l.code} selected={l.code === lang} onClick={() => chooseLang(l.code)}>
+                <ListItemIcon>{l.code === lang && <Check fontSize="small" />}</ListItemIcon>
+                {l.label}
+              </MenuItem>
+            ))}
+          </Menu>
           <Tooltip title={mode === 'dark' ? 'Mode clair' : 'Mode sombre'}>
             <IconButton onClick={toggle}>{mode === 'dark' ? <LightMode /> : <DarkMode />}</IconButton>
           </Tooltip>

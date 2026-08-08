@@ -52,11 +52,13 @@ class MailService:
         return IMAPConnector(acc.imap_host, acc.email, acc.password)
 
     def inbox(self, user_id: str, n: int = 20) -> dict:
-        """Liste les N derniers mails — RAPIDE, aucun LLM."""
+        """Liste les N derniers mails — RAPIDE, aucun LLM. Jamais de 500."""
         try:
             emails = self._connector(user_id).fetch_recent(n)
         except MailError as e:
             raise LLMServiceError(str(e))
+        except Exception as e:                       # toute erreur IMAP/réseau -> message clair
+            raise LLMServiceError(f"Impossible de lire la boîte : {e}")
         return {"count": len(emails), "emails": emails}
 
     def triage(self, user_id: str, emails: list[dict],

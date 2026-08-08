@@ -37,16 +37,26 @@ CHAT_MAX_TOKENS = 384
 
 
 from ..language import detect_language as _detect_language  # noqa: E402 (ré-export tests)
-from ..language import language_directive
+from ..language import directive_for
 
 
-def _with_system(messages: list[dict]) -> list[dict]:
+def _with_system(messages: list[dict], lang: str | None = None) -> list[dict]:
     if any(m.get("role") == "system" for m in messages):
         return messages
     last_user = next((m["content"] for m in reversed(messages)
                       if m.get("role") == "user"), "")
-    system = CHAT_SYSTEM + language_directive(last_user)
-    return [{"role": "system", "content": system}, *messages]
+    directive = directive_for(lang, last_user)
+    forced = bool(lang and lang not in ("auto", ""))
+    if forced:
+        # Langue IMPOSÉE : le système est la consigne cible SEULE (évite le biais
+        # du prompt français) + on la répète sur le dernier message utilisateur.
+        out = [dict(m) for m in messages]
+        for m in reversed(out):
+            if m.get("role") == "user":
+                m["content"] = f"{m['content']}\n\n[{directive.strip()}]"
+                break
+        return [{"role": "system", "content": directive.strip()}, *out]
+    return [{"role": "system", "content": CHAT_SYSTEM + directive}, *messages]
 
 
 class LLMService:
@@ -188,7 +198,8 @@ class LLMService:
     def complete(self, user_id: str, messages: list[dict], *,
                  strategy: str = "balanced", pinned_model: str | None = None,
                  require_privacy: str | None = None, needs_tools: bool = False,
-                 temperature: float = 0.7, max_tokens: int | None = None) -> dict:
+                 temperature: float = 0.7, max_tokens: int | None = None,
+                 lang: str | None = None) -> dict:
         router = self.router_for(user_id)
         if not router.registry.specs():
             raise LLMServiceError(
@@ -202,7 +213,7 @@ class LLMService:
         )
         req = CompletionRequest(
             messages=[Message(role=m["role"], content=m["content"])
-                      for m in _with_system(messages)],
+                      for m in _with_system(messages, lang)],
             temperature=temperature, max_tokens=max_tokens or CHAT_MAX_TOKENS,
         )
         chosen = router.choose(ctx, strategy)
@@ -218,9 +229,9 @@ class LLMService:
         }
 
     def _prepare_messages(self, user_id: str, messages: list[dict],
-                          use_memory: bool) -> list[dict]:
-        """Ajoute le prompt système et, si demandé, la mémoire pertinente."""
-        msgs = _with_system(messages)
+                          use_memory: bool, lang: str | None = None) -> list[dict]:
+        """Ajoute le prompt système (+ langue) et, si demandé, la mémoire pertinente."""
+        msgs = _with_system(messages, lang)
         if use_memory:
             try:
                 from .memory_service import MemoryService
@@ -236,7 +247,8 @@ class LLMService:
     # --- Chat en streaming (tokens au fil de l'eau) ---
     def stream(self, user_id: str, messages: list[dict], *,
                strategy: str = "balanced", pinned_model: str | None = None,
-               require_privacy: str | None = None, use_memory: bool = True):
+               require_privacy: str | None = None, use_memory: bool = True,
+               lang: str | None = None):
         """Génère les tokens progressivement. Renvoie d'abord le modèle choisi."""
         router = self.router_for(user_id, record_usage=False)
         if not router.registry.specs():
@@ -249,7 +261,7 @@ class LLMService:
         chosen = router.choose(ctx, strategy)
         req = CompletionRequest(
             messages=[Message(role=m["role"], content=m["content"])
-                      for m in self._prepare_messages(user_id, messages, use_memory)],
+                      for m in self._prepare_messages(user_id, messages, use_memory, lang)],
             max_tokens=CHAT_MAX_TOKENS)
         return chosen, router.stream(req, ctx=ctx, strategy=strategy)
 

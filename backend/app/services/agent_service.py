@@ -107,7 +107,7 @@ class AgentService:
         return orch._as_dict(orch.run(agent, task, goal=goal))
 
     def stream(self, user_id: str, agent: str, task: str,
-               pinned_model: str | None = None):
+               pinned_model: str | None = None, lang: str | None = None):
         """Streaming d'un agent : construit son prompt puis diffuse les tokens.
 
         L'utilisateur peut imposer un modèle rapide (ex: llama3.2:1b) au lieu de
@@ -119,7 +119,8 @@ class AgentService:
             raise LLMServiceError(f"Agent inconnu: {agent}")
         ag = orch.registry.get(agent)
         ctx = orch._new_context(goal=task)
-        ctx.data["lang_directive"] = ctx.use_tool("lang_directive", task) or ""  # langue
+        from ..language import directive_for
+        ctx.data["lang_directive"] = directive_for(lang, task)   # langue imposée ou auto
         task = ag.preprocess(task, ctx)             # déclenche les vrais outils (scholar/RAG/KG)
         messages = ag.build_messages(task, ctx)     # system + contexte + tâche
         router = self.llm_service.router_for(user_id, record_usage=False)
