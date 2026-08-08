@@ -21,7 +21,11 @@ export function RealtimeProvider({ children }) {
 
   useEffect(() => {
     if (!token) return
-    const socket = io('/', { path: '/socket.io', transports: ['websocket', 'polling'] })
+    // Polling uniquement : le serveur de dev Werkzeug ne gère pas les vrais
+    // WebSockets (d'où le bruit "ws proxy ECONNRESET"). Le polling est fiable et
+    // suffisant. En prod avec un worker eventlet/gevent, on peut réactiver
+    // ['websocket', 'polling'] pour de vrais WebSockets.
+    const socket = io('/', { path: '/socket.io', transports: ['polling'] })
     socketRef.current = socket
     setSocket(socket)
 
