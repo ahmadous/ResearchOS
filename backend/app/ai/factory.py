@@ -11,6 +11,7 @@ from .base import LLMProvider, ProviderError
 from .providers import (
     AnthropicProvider,
     DeepSeekProvider,
+    GroqProvider,
     OllamaProvider,
     OpenAICompatibleProvider,
     OpenRouterProvider,
@@ -23,6 +24,7 @@ _REGISTRY: dict[str, type[LLMProvider]] = {
     "ollama": OllamaProvider,
     "openrouter": OpenRouterProvider,
     "deepseek": DeepSeekProvider,
+    "groq": GroqProvider,
     # Providers compatibles-OpenAI : réutilisent la même classe, base_url différent.
     "qwen": OpenAICompatibleProvider,
     "mistral": OpenAICompatibleProvider,
