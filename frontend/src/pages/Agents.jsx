@@ -8,6 +8,7 @@ import Page from '../components/Page'
 import { TOKEN_KEY } from '../api/client'
 import { useAgents, useModels } from '../hooks/useApi'
 import { useRealtime } from '../store/RealtimeProvider'
+import { getLang } from '../store/lang'
 
 export default function Agents() {
   const { data } = useAgents()
@@ -44,7 +45,7 @@ export default function Agents() {
     t0.current = performance.now()
     socket.emit('agent_stream', {
       token: localStorage.getItem(TOKEN_KEY),
-      agent: selected.name, task, pinned_model: pinned || undefined,
+      agent: selected.name, task, pinned_model: pinned || undefined, lang: getLang(),
     })
   }
 

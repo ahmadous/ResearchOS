@@ -45,14 +45,14 @@ def _on_disconnect():
     log.debug("client déconnecté")
 
 
-def _stream_worker(app, sid, user_id, messages, strategy, pinned_model, use_memory):
+def _stream_worker(app, sid, user_id, messages, strategy, pinned_model, use_memory, lang):
     """Diffuse les tokens d'une complétion vers un client (thread de fond)."""
     with app.app_context():
         from ..services import LLMService
         try:
             chosen, tokens = LLMService().stream(
                 user_id, messages, strategy=strategy, pinned_model=pinned_model,
-                use_memory=use_memory)
+                use_memory=use_memory, lang=lang)
             socketio.emit("chat_start", {"model": chosen.id, "provider": chosen.provider},
                           to=sid)
             for tok in tokens:
@@ -73,15 +73,15 @@ def _on_chat_stream(data):
     socketio.start_background_task(
         _stream_worker, app, request.sid, user_id,
         data.get("messages", []), data.get("strategy", "balanced"),
-        data.get("pinned_model"), data.get("use_memory", True))
+        data.get("pinned_model"), data.get("use_memory", True), data.get("lang"))
 
 
-def _agent_stream_worker(app, sid, user_id, agent, task, pinned_model):
+def _agent_stream_worker(app, sid, user_id, agent, task, pinned_model, lang=None):
     """Diffuse la sortie d'un agent token par token."""
     with app.app_context():
         from ..services import AgentService
         try:
-            chosen, tokens = AgentService().stream(user_id, agent, task, pinned_model)
+            chosen, tokens = AgentService().stream(user_id, agent, task, pinned_model, lang)
             socketio.emit("agent_start", {"agent": agent, "model": chosen.id}, to=sid)
             for tok in tokens:
                 socketio.emit("agent_token", {"agent": agent, "text": tok}, to=sid)
@@ -100,7 +100,7 @@ def _on_agent_stream(data):
     app = current_app._get_current_object()
     socketio.start_background_task(
         _agent_stream_worker, app, request.sid, user_id,
-        data.get("agent"), data.get("task", ""), data.get("pinned_model"))
+        data.get("agent"), data.get("task", ""), data.get("pinned_model"), data.get("lang"))
 
 
 def register_socketio_handlers() -> None:

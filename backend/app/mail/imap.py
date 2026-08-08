@@ -43,19 +43,27 @@ class IMAPConnector:
     def fetch_recent(self, n: int = 20) -> list[dict]:
         m = self._open()
         try:
-            m.select("INBOX", readonly=True)
+            typ, _ = m.select("INBOX", readonly=True)
+            if typ != "OK":
+                raise MailError("Impossible d'ouvrir la boîte de réception (IMAP activé ?).")
             typ, data = m.search(None, "ALL")
-            ids = data[0].split()[-n:]
+            ids = (data[0] or b"").split()[-n:]
             out = []
             for i in reversed(ids):
-                typ, d = m.fetch(i, "(RFC822 FLAGS)")
-                if not d or not isinstance(d[0], tuple):
+                try:
+                    typ, d = m.fetch(i, "(RFC822 FLAGS)")
+                    if not d or not isinstance(d[0], tuple):
+                        continue
+                    try:
+                        flags = imaplib.ParseFlags(d[0][0])
+                        flag_bytes = b" ".join(flags) if flags else b""
+                    except Exception:
+                        flag_bytes = b""
+                    e = parse_email(d[0][1], flag_bytes)
+                    e["uid"] = i.decode()
+                    out.append(e)
+                except Exception:               # un message illisible n'arrête pas les autres
                     continue
-                flags = imaplib.ParseFlags(d[0][0])
-                flag_bytes = b" ".join(flags) if flags else b""
-                e = parse_email(d[0][1], flag_bytes)
-                e["uid"] = i.decode()
-                out.append(e)
             return out
         finally:
             try:

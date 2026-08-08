@@ -136,6 +136,7 @@ class DocumentIngestSchema(Schema):
 class RAGQuerySchema(Schema):
     question = fields.Str(required=True, validate=validate.Length(min=1))
     document_id = fields.Str(load_default=None, allow_none=True)
+    lang = fields.Str(load_default=None, allow_none=True)   # langue imposée ('auto' = détecter)
     strategy = fields.Str(load_default="balanced",
                           validate=validate.OneOf(
                               ["balanced", "cost", "speed", "quality", "privacy"]))
@@ -188,6 +189,7 @@ class MessageAppendSchema(Schema):
 class ChatSchema(Schema):
     messages = fields.List(fields.Nested(MessageSchema), required=True,
                            validate=validate.Length(min=1))
+    lang = fields.Str(load_default=None, allow_none=True)   # langue imposée ('auto' = détecter)
     strategy = fields.Str(load_default="balanced",
                           validate=validate.OneOf(
                               ["balanced", "cost", "speed", "quality", "privacy"]))
