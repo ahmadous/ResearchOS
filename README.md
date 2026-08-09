@@ -1,5 +1,12 @@
 # ResearchOS
 
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
+![Flask](https://img.shields.io/badge/Flask-3-000000?logo=flask&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+![Status](https://img.shields.io/badge/status-active%20development-brightgreen)
+
 Un « système d'exploitation » pour la recherche scientifique, basé sur des agents IA collaboratifs et un routeur multi-modèles intelligent.
 
 ## Stack
