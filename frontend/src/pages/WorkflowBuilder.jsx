@@ -83,11 +83,13 @@ export default function WorkflowBuilder() {
   }
   useEffect(() => {
     const move = (e) => {
-      if (!drag.current) return
+      if (!drag.current || !canvasRef.current) return
       const rect = canvasRef.current.getBoundingClientRect()
       const x = Math.max(0, e.clientX - rect.left - drag.current.dx)
       const y = Math.max(0, e.clientY - rect.top - drag.current.dy)
-      setNodes((n) => n.map((nd) => (nd.id === drag.current.id ? { ...nd, x, y } : nd)))
+      const id = drag.current.id   // capturé maintenant : l'updater ne doit PAS
+      // déréférencer drag.current (qui peut être nullé par pointerup avant l'application).
+      setNodes((n) => n.map((nd) => (nd && nd.id === id ? { ...nd, x, y } : nd)))
     }
     const up = () => (drag.current = null)
     window.addEventListener('pointermove', move)
@@ -124,8 +126,9 @@ export default function WorkflowBuilder() {
   }
   const load = (w) => {
     setWf({ id: w.id, name: w.name })
-    setNodes(w.graph.nodes || [])
-    setEdges(w.graph.edges || [])
+    // Filtre tout nœud/arête malformé : un graphe corrompu ne doit jamais crasher le rendu.
+    setNodes((w.graph?.nodes || []).filter((n) => n && n.id))
+    setEdges((w.graph?.edges || []).filter((e) => e && e.source && e.target))
     setStatus({}); setRunId(null); setRunStatus(null)
   }
 
@@ -231,7 +234,7 @@ export default function WorkflowBuilder() {
           </svg>
 
           {/* Nœuds */}
-          {nodes.map((n) => (
+          {nodes.filter(Boolean).map((n) => (
             <Paper
               key={n.id}
               elevation={0}
