@@ -139,9 +139,10 @@ export default function WorkflowBuilder() {
       title="Workflow Builder"
       subtitle="Construisez un pipeline d'agents en drag & drop"
       action={
-        <Stack direction="row" gap={1}>
+        <Stack direction="row" gap={1} flexWrap="wrap" useFlexGap>
           <TextField size="small" value={wf.name}
-            onChange={(e) => setWf({ ...wf, name: e.target.value })} sx={{ width: 200 }} />
+            onChange={(e) => setWf({ ...wf, name: e.target.value })}
+            sx={{ width: { xs: '100%', sm: 200 } }} />
           <Button variant="outlined" startIcon={<Save />} onClick={doSave} disabled={save.isPending}>
             Enregistrer
           </Button>
@@ -186,9 +187,12 @@ export default function WorkflowBuilder() {
         </Alert>
       )}
 
-      <Stack direction="row" gap={2}>
+      <Stack direction={{ xs: 'column', md: 'row' }} gap={2}>
         {/* Palette d'agents */}
-        <Card sx={{ width: 210, flexShrink: 0, maxHeight: '70vh', overflowY: 'auto' }}>
+        <Card sx={{
+          width: { xs: '100%', md: 210 }, flexShrink: 0,
+          maxHeight: { xs: 220, md: '70vh' }, overflowY: 'auto',
+        }}>
           <CardContent>
             <Typography variant="subtitle2" mb={1}>Agents</Typography>
             <Stack gap={0.5}>
