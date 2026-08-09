@@ -19,3 +19,6 @@ dist/
 # PDF de rapports générés
 backend/generated_reports/
 backend/uploads/
+
+# Config locale de l'éditeur/agent (non versionnée)
+.claude/
