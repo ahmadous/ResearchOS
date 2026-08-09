@@ -6,7 +6,7 @@ Un « système d'exploitation » pour la recherche scientifique, basé sur des a
 
 - **Backend** : Python 3.12, Flask, SQLAlchemy, JWT, Flask-SocketIO, Celery + Redis, PostgreSQL, Swagger/OpenAPI
 - **Frontend** : React 19, Vite, Material UI, React Router, React Query, Axios, Framer Motion, Recharts, Monaco Editor
-- **IA** : couche multi-fournisseurs (OpenAI, Anthropic, Gemini, Ollama, OpenRouter, HuggingFace, DeepSeek, Qwen, Llama, Mistral, Grok) avec routeur intelligent (coût / vitesse / qualité / confidentialité / contexte).
+- **IA** : couche multi-fournisseurs (OpenAI, Anthropic, Gemini, Ollama, Groq, OpenRouter, HuggingFace, DeepSeek, Qwen, Llama, Mistral, Grok) avec routeur intelligent (coût / vitesse / qualité / confidentialité / contexte).
 
 ## Architecture (Clean Architecture)
 
