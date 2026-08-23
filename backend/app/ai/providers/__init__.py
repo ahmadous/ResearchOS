@@ -2,6 +2,7 @@ from .anthropic_provider import AnthropicProvider
 from .ollama_provider import OllamaProvider
 from .openai_provider import (
     DeepSeekProvider,
+    GeminiProvider,
     GroqProvider,
     OpenAICompatibleProvider,
     OpenRouterProvider,
@@ -14,4 +15,5 @@ __all__ = [
     "OpenRouterProvider",
     "DeepSeekProvider",
     "GroqProvider",
+    "GeminiProvider",
 ]

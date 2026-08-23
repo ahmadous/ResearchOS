@@ -139,6 +139,36 @@ class GroqProvider(OpenAICompatibleProvider):
         ]
 
 
+class GeminiProvider(OpenAICompatibleProvider):
+    """Google Gemini via son endpoint compatible-OpenAI.
+
+    Google expose `/v1beta/openai/` : on réutilise donc le client OpenAI standard
+    (pas de SDK google à installer). Modèles multimodaux, très grand contexte (1M).
+    Clé sur https://aistudio.google.com/app/apikey.
+    """
+    name = "gemini"
+    default_base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
+
+    def models(self) -> list[ModelSpec]:
+        return [
+            ModelSpec("gemini-2.5-pro", "gemini", "Gemini 2.5 Pro",
+                      modalities=(Modality.TEXT, Modality.VISION),
+                      context_window=1_048_576, max_output=65_536,
+                      input_cost=1.25, output_cost=10.0,
+                      speed=0.6, quality=0.93, privacy=Privacy.CLOUD, supports_tools=True),
+            ModelSpec("gemini-2.5-flash", "gemini", "Gemini 2.5 Flash",
+                      modalities=(Modality.TEXT, Modality.VISION),
+                      context_window=1_048_576, max_output=65_536,
+                      input_cost=0.30, output_cost=2.50,
+                      speed=0.85, quality=0.83, privacy=Privacy.CLOUD, supports_tools=True),
+            ModelSpec("gemini-2.0-flash", "gemini", "Gemini 2.0 Flash",
+                      modalities=(Modality.TEXT, Modality.VISION),
+                      context_window=1_048_576, max_output=8_192,
+                      input_cost=0.10, output_cost=0.40,
+                      speed=0.92, quality=0.78, privacy=Privacy.CLOUD, supports_tools=True),
+        ]
+
+
 class DeepSeekProvider(OpenAICompatibleProvider):
     name = "deepseek"
     default_base_url = "https://api.deepseek.com/v1"
