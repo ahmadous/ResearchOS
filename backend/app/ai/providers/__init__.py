@@ -4,6 +4,7 @@ from .openai_provider import (
     DeepSeekProvider,
     GeminiProvider,
     GroqProvider,
+    HuggingFaceProvider,
     OpenAICompatibleProvider,
     OpenRouterProvider,
 )
@@ -16,4 +17,5 @@ __all__ = [
     "DeepSeekProvider",
     "GroqProvider",
     "GeminiProvider",
+    "HuggingFaceProvider",
 ]

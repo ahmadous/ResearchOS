@@ -169,6 +169,35 @@ class GeminiProvider(OpenAICompatibleProvider):
         ]
 
 
+class HuggingFaceProvider(OpenAICompatibleProvider):
+    """Hugging Face Inference Providers (routeur compatible-OpenAI).
+
+    Endpoint `https://router.huggingface.co/v1` : on réutilise le client OpenAI.
+    Palier GRATUIT (crédits mensuels) avec un token HF (`hf_…`) créé sur
+    https://huggingface.co/settings/tokens. Pour un usage illimité et 100%
+    gratuit, préférer Ollama en local.
+    """
+    name = "huggingface"
+    default_base_url = "https://router.huggingface.co/v1"
+
+    def models(self) -> list[ModelSpec]:
+        # Catalogue HF volatil : modèles populaires servis par le routeur.
+        return [
+            ModelSpec("meta-llama/Llama-3.3-70B-Instruct", "huggingface", "Llama 3.3 70B (HF)",
+                      context_window=131_072, max_output=8_192,
+                      input_cost=0.6, output_cost=0.9,
+                      speed=0.5, quality=0.85, privacy=Privacy.CLOUD, supports_tools=True),
+            ModelSpec("Qwen/Qwen2.5-72B-Instruct", "huggingface", "Qwen2.5 72B (HF)",
+                      context_window=32_768, max_output=8_192,
+                      input_cost=0.6, output_cost=0.9,
+                      speed=0.5, quality=0.84, privacy=Privacy.CLOUD, supports_tools=True),
+            ModelSpec("meta-llama/Llama-3.1-8B-Instruct", "huggingface", "Llama 3.1 8B (HF)",
+                      context_window=131_072, max_output=8_192,
+                      input_cost=0.1, output_cost=0.1,
+                      speed=0.8, quality=0.72, privacy=Privacy.CLOUD, supports_tools=True),
+        ]
+
+
 class DeepSeekProvider(OpenAICompatibleProvider):
     name = "deepseek"
     default_base_url = "https://api.deepseek.com/v1"

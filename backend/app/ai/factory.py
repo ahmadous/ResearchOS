@@ -13,6 +13,7 @@ from .providers import (
     DeepSeekProvider,
     GeminiProvider,
     GroqProvider,
+    HuggingFaceProvider,
     OllamaProvider,
     OpenAICompatibleProvider,
     OpenRouterProvider,
@@ -31,7 +32,7 @@ _REGISTRY: dict[str, type[LLMProvider]] = {
     "qwen": OpenAICompatibleProvider,
     "mistral": OpenAICompatibleProvider,
     "grok": OpenAICompatibleProvider,
-    "huggingface": OpenAICompatibleProvider,
+    "huggingface": HuggingFaceProvider,
 }
 
 
