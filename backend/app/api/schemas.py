@@ -1,7 +1,7 @@
 """Schémas Marshmallow — validation entrée + documentation OpenAPI."""
 from __future__ import annotations
 
-from marshmallow import Schema, fields, validate
+from marshmallow import EXCLUDE, Schema, fields, validate
 
 
 class RegisterSchema(Schema):
@@ -115,7 +115,11 @@ class ScholarSearchSchema(Schema):
 
 
 class ScholarImportSchema(Schema):
-    # On accepte un objet `Paper` (tel que renvoyé par /search).
+    # On accepte un objet `Paper` (tel que renvoyé par /search) : les champs
+    # supplémentaires (venue, citations…) sont ignorés au lieu de lever une erreur.
+    class Meta:
+        unknown = EXCLUDE
+
     title = fields.Str(load_default="")
     abstract = fields.Str(load_default="")
     authors = fields.List(fields.Str(), load_default=list)

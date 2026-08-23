@@ -1,14 +1,12 @@
 import { useMemo, useState } from 'react'
 import {
-  Alert, Box, Button, Card, CardContent, Chip, IconButton, Link, MenuItem,
-  Paper, Select, Stack, TextField, Typography, CircularProgress,
+  Alert, Box, Button, Card, CardContent, MenuItem, Paper, Select,
+  Stack, TextField, Typography, CircularProgress,
 } from '@mui/material'
 import { alpha } from '@mui/material/styles'
-import {
-  Search, PictureAsPdf, MenuBook, OpenInNew, Science, AutoAwesome,
-  FormatQuote, CalendarToday,
-} from '@mui/icons-material'
+import { Search, PictureAsPdf, MenuBook, Science, AutoAwesome } from '@mui/icons-material'
 import Page from '../components/Page'
+import PaperCard from '../components/PaperCard'
 import { errMsg } from '../api/client'
 import {
   useReportSearch, useReportSynthesize, exportReportPdf, exportBibtex,
@@ -18,118 +16,6 @@ const SORTS = {
   citations: (a, b) => (b.citations ?? -1) - (a.citations ?? -1),
   year: (a, b) => (b.year ?? 0) - (a.year ?? 0),
   title: (a, b) => (a.title || '').localeCompare(b.title || ''),
-}
-
-// Couleur d'accent par source (petite touche d'identité, pas un chip gris générique).
-const SOURCE_COLOR = {
-  arxiv: '#B31B1B', openalex: '#4F46E5', crossref: '#0E7490', semanticscholar: '#1857B6',
-}
-const SERIF = '"Charter","Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif'
-
-function CitationBadge({ n }) {
-  const has = typeof n === 'number'
-  return (
-    <Stack alignItems="center" justifyContent="center" sx={{
-      minWidth: 62, px: 1, py: 0.75, borderRadius: 2,
-      bgcolor: (t) => alpha(t.palette.primary.main, has ? 0.1 : 0.04),
-      border: (t) => `1px solid ${alpha(t.palette.primary.main, has ? 0.25 : 0.12)}`,
-      flexShrink: 0,
-    }}>
-      <Stack direction="row" alignItems="center" gap={0.3} sx={{ color: 'primary.main' }}>
-        <FormatQuote sx={{ fontSize: 13, opacity: 0.7 }} />
-        <Typography sx={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
-          {has ? n : '—'}
-        </Typography>
-      </Stack>
-      <Typography sx={{ fontSize: 10, color: 'text.secondary', mt: 0.2 }}>
-        {n === 1 ? 'citation' : 'citations'}
-      </Typography>
-    </Stack>
-  )
-}
-
-function PaperCard({ r, rank }) {
-  const color = SOURCE_COLOR[String(r.source || '').toLowerCase()] || '#6B7280'
-  const authors = (r.authors || [])
-  return (
-    <Paper elevation={0} sx={{
-      p: 2, borderRadius: 2.5, border: 1, borderColor: 'divider',
-      transition: 'transform .15s ease, border-color .15s ease, box-shadow .15s ease',
-      '&:hover': {
-        transform: 'translateY(-2px)', borderColor: (t) => alpha(t.palette.primary.main, 0.4),
-        boxShadow: (t) => `0 10px 30px -18px ${alpha(t.palette.primary.main, 0.5)}`,
-      },
-    }}>
-      <Stack direction="row" gap={1.5}>
-        <Typography sx={{
-          fontFamily: SERIF, fontSize: 15, color: 'text.disabled', minWidth: 22,
-          fontVariantNumeric: 'tabular-nums', pt: 0.3,
-        }}>{rank}</Typography>
-
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Link href={r.url || undefined} target="_blank" rel="noopener" underline="none"
-            sx={{
-              fontFamily: SERIF, fontSize: '1.06rem', fontWeight: 600, lineHeight: 1.3,
-              color: 'text.primary', display: 'block',
-              '&:hover': { color: 'primary.main' },
-            }}>
-            {r.title}
-          </Link>
-
-          <Stack direction="row" flexWrap="wrap" alignItems="center" gap={0.75} mt={0.6}
-            sx={{ color: 'text.secondary', fontSize: 12.5 }}>
-            <Typography variant="caption" sx={{ fontWeight: 500 }}>
-              {authors.slice(0, 3).join(', ')}{authors.length > 3 ? ' et al.' : ''}
-              {authors.length === 0 && 'Auteurs inconnus'}
-            </Typography>
-            {r.year && (
-              <>
-                <Box component="span" sx={{ opacity: 0.4 }}>·</Box>
-                <Stack direction="row" alignItems="center" gap={0.3}>
-                  <CalendarToday sx={{ fontSize: 11 }} />
-                  <Typography variant="caption">{r.year}</Typography>
-                </Stack>
-              </>
-            )}
-            {r.venue && (
-              <>
-                <Box component="span" sx={{ opacity: 0.4 }}>·</Box>
-                <Typography variant="caption" sx={{ fontStyle: 'italic', maxWidth: 260,
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {r.venue}
-                </Typography>
-              </>
-            )}
-          </Stack>
-
-          {r.abstract && (
-            <Typography variant="body2" color="text.secondary" sx={{
-              mt: 1, lineHeight: 1.55,
-              display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-            }}>
-              {r.abstract}
-            </Typography>
-          )}
-
-          <Stack direction="row" alignItems="center" gap={1} mt={1.25}>
-            <Chip size="small" label={r.source}
-              sx={{
-                height: 22, fontSize: 11, fontWeight: 600, textTransform: 'lowercase',
-                color, bgcolor: alpha(color, 0.1), border: `1px solid ${alpha(color, 0.3)}`,
-              }} />
-            {r.url && (
-              <Link href={r.url} target="_blank" rel="noopener" underline="hover"
-                sx={{ fontSize: 12.5, display: 'inline-flex', alignItems: 'center', gap: 0.4, color: 'primary.main' }}>
-                Ouvrir <OpenInNew sx={{ fontSize: 13 }} />
-              </Link>
-            )}
-          </Stack>
-        </Box>
-
-        <CitationBadge n={r.citations} />
-      </Stack>
-    </Paper>
-  )
 }
 
 export default function Reports() {
@@ -268,7 +154,7 @@ export default function Reports() {
             </CardContent></Card>
           ) : (
             <Stack gap={1.5}>
-              {rows.map((r, i) => <PaperCard key={r.url || i} r={r} rank={i + 1} />)}
+              {rows.map((r, i) => <PaperCard key={r.url || i} paper={r} rank={i + 1} />)}
             </Stack>
           )}
         </>
