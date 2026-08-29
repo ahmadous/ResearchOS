@@ -4,7 +4,10 @@ import axios from 'axios'
 // la session et renvoie vers /login.
 export const TOKEN_KEY = 'researchos_token'
 
-export const api = axios.create({ baseURL: '/api' })
+// En dev : VITE_API_URL vide -> '/api' (proxy Vite vers le backend local).
+// En prod (Vercel) : VITE_API_URL = URL du backend Render, ex https://researchos-api.onrender.com
+export const API_BASE = import.meta.env.VITE_API_URL || ''
+export const api = axios.create({ baseURL: `${API_BASE}/api` })
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem(TOKEN_KEY)

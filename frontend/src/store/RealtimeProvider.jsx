@@ -25,7 +25,9 @@ export function RealtimeProvider({ children }) {
     // WebSockets (d'où le bruit "ws proxy ECONNRESET"). Le polling est fiable et
     // suffisant. En prod avec un worker eventlet/gevent, on peut réactiver
     // ['websocket', 'polling'] pour de vrais WebSockets.
-    const socket = io('/', { path: '/socket.io', transports: ['polling'] })
+    // Dev : même origine (proxy Vite). Prod : URL du backend Render (VITE_API_URL).
+    const socketUrl = import.meta.env.VITE_API_URL || '/'
+    const socket = io(socketUrl, { path: '/socket.io', transports: ['polling'] })
     socketRef.current = socket
     setSocket(socket)
 

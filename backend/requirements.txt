@@ -14,7 +14,10 @@ python-dotenv>=1.0
 SQLAlchemy>=2.0,<3
 Flask-SQLAlchemy>=3.1
 alembic>=1.13
-# psycopg2-binary>=2.9        # requis seulement pour PostgreSQL (prod)
+psycopg2-binary>=2.9         # PostgreSQL (prod : Supabase / Render)
+
+# --- Serveur de production (WSGI) ---
+gunicorn>=21.2
 
 # --- Auth ---
 Flask-JWT-Extended>=4.6

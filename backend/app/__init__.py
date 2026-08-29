@@ -8,6 +8,9 @@ from __future__ import annotations
 
 
 def create_app(config_name: str | None = None):
+    import os
     from .app_factory import build_app
-    return build_app(config_name)
+    # Priorité : argument explicite, sinon variable d'env FLASK_CONFIG
+    # (ex: "prod" sur Render), sinon DevConfig par défaut.
+    return build_app(config_name or os.getenv("FLASK_CONFIG"))
 

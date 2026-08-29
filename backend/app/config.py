@@ -15,6 +15,13 @@ class BaseConfig:
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-change-me")
     JSON_SORT_KEYS = False
 
+    # --- CORS ---
+    # "*" en dev ; en prod : domaines autorisés séparés par des virgules
+    # (ex: "https://researchos.vercel.app,https://researchos.dev").
+    _cors_origins = os.getenv("CORS_ORIGINS", "*").strip()
+    CORS_ORIGINS = ("*" if _cors_origins == "*"
+                    else [o.strip() for o in _cors_origins.split(",") if o.strip()])
+
     # --- SQLAlchemy ---
     # Chemin ABSOLU et prévisible (sinon Flask le résout dans instance/, ce qui
     # rend le fichier difficile à trouver/supprimer).

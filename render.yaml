@@ -1,0 +1,32 @@
+# Blueprint Render — backend Flask de ResearchOS.
+# Déploiement : Render lit ce fichier depuis la racine du dépôt.
+# La base de données est fournie via DATABASE_URL (ex: Postgres Supabase).
+services:
+  - type: web
+    name: researchos-api
+    runtime: python
+    rootDir: backend
+    plan: free                 # se met en veille après ~15 min d'inactivité
+    branch: main
+    buildCommand: "pip install -r requirements.txt -r requirements-cloud.txt"
+    startCommand: "gunicorn -c gunicorn.conf.py wsgi:app"
+    healthCheckPath: /health
+    envVars:
+      - key: FLASK_CONFIG
+        value: prod
+      - key: PYTHON_VERSION
+        value: "3.12.4"
+      # Secrets générés automatiquement par Render :
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      # À RENSEIGNER dans le dashboard Render (sync:false = non versionné) :
+      - key: CREDENTIAL_KEY      # clé Fernet (chiffrement des clés API stockées)
+        sync: false
+      - key: DATABASE_URL        # URL Postgres Supabase
+        sync: false
+      - key: CORS_ORIGINS        # URL du frontend Vercel, ex https://researchos.vercel.app
+        sync: false
+      - key: TASK_RUNNER
+        value: inline
